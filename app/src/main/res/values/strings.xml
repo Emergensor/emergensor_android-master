@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Emergensor</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <!-- facebook -->
+    <string name="facebook_app_id">444612535982237</string>
+    <string name="fb_login_protocol_scheme">fb444612535982237</string>
+</resources>

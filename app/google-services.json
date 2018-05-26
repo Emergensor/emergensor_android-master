@@ -1,0 +1,59 @@
+{
+  "project_info": {
+    "project_number": "967482470953",
+    "firebase_url": "https://emergensor-c0d72.firebaseio.com",
+    "project_id": "emergensor-c0d72",
+    "storage_bucket": "emergensor-c0d72.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:967482470953:android:fced8c5b54a486bb",
+        "android_client_info": {
+          "package_name": "team_emergensor.co.jp.emergensor"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "967482470953-i96k046tbm3e7ap3i5qj2osli4po7jaa.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "team_emergensor.co.jp.emergensor",
+            "certificate_hash": "2955e66c52df0c113798337dd46614b63f5ebbc8"
+          }
+        },
+        {
+          "client_id": "967482470953-eb4tb85bffoq5d5q4pj6fj17100a61cv.apps.googleusercontent.com",
+          "client_type": 3
+        },
+        {
+          "client_id": "967482470953-eb4tb85bffoq5d5q4pj6fj17100a61cv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAjhyNswvf7kvwVyKcUumxy42Yj817Dhm0"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "967482470953-eb4tb85bffoq5d5q4pj6fj17100a61cv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
