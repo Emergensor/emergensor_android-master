@@ -2,6 +2,7 @@ package team_emergensor.co.jp.emergensor.ui.login
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import com.facebook.AccessToken
 import com.facebook.CallbackManager
@@ -26,7 +27,7 @@ class LoginActivity : BaseActivity() {
 
         // Initialize Facebook Login button
         val loginButton = findViewById<LoginButton>(R.id.login_button)
-        loginButton.setReadPermissions("email", "public_profile")
+        loginButton.setReadPermissions("email", "public_profile", "user_friends")
         loginButton.registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
             override fun onSuccess(loginResult: LoginResult) {
                 handleFacebookAccessToken(loginResult.accessToken)
@@ -36,6 +37,7 @@ class LoginActivity : BaseActivity() {
             }
 
             override fun onError(error: FacebookException) {
+                Log.d("login error", error.message)
             }
         })
 
