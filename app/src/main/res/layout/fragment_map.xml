@@ -8,12 +8,18 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context="team_emergensor.co.jp.emergensor.ui.home.MapFragment">
+        tools:context="team_emergensor.co.jp.emergensor.presentation.home.MapFragment">
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:text="mapFragment" />
+
+        <Button
+            android:id="@+id/logout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Button" />
 
     </FrameLayout>
 </layout>

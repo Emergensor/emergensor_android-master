@@ -1,6 +1,6 @@
 package team_emergensor.co.jp.emergensor.lib.function;
 
-import team_emergensor.co.jp.emergensor.Entity.Complex;
+import team_emergensor.co.jp.emergensor.lib.data.Complex;
 
 public class FFT {
 

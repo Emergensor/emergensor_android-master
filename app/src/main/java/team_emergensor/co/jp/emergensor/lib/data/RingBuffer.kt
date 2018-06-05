@@ -1,4 +1,4 @@
-package team_emergensor.co.jp.emergensor.Entity
+package team_emergensor.co.jp.emergensor.lib.data
 
 class RingBuffer<T>(val size: Int) {
 

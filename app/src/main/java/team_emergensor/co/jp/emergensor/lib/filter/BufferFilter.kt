@@ -1,8 +1,8 @@
 package team_emergensor.co.jp.emergensor.lib.filter
 
 import io.reactivex.Observable
-import team_emergensor.co.jp.emergensor.Entity.Message
-import team_emergensor.co.jp.emergensor.Entity.RingBuffer
+import team_emergensor.co.jp.emergensor.lib.data.Message
+import team_emergensor.co.jp.emergensor.lib.data.RingBuffer
 import team_emergensor.co.jp.emergensor.lib.filter.base.Filter
 
 

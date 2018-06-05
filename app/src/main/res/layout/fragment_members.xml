@@ -8,7 +8,7 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context="team_emergensor.co.jp.emergensor.ui.home.MembersFragment">
+        tools:context="team_emergensor.co.jp.emergensor.presentation.home.MembersFragment">
 
         <TextView
             android:layout_width="match_parent"

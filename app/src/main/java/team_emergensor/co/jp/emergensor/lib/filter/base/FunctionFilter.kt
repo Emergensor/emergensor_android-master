@@ -1,6 +1,6 @@
 package team_emergensor.co.jp.emergensor.lib.filter.base
 
-import team_emergensor.co.jp.emergensor.Entity.Message
+import team_emergensor.co.jp.emergensor.lib.data.Message
 
 abstract class FunctionFilter<T, O>(private val resultBodySize: Int = 1) : Filter.Map<T, O>() {
 

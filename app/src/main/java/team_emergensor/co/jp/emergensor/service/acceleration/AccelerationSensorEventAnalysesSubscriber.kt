@@ -7,7 +7,7 @@ import android.util.Log
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
-import team_emergensor.co.jp.emergensor.Entity.Message
+import team_emergensor.co.jp.emergensor.lib.data.Message
 import team_emergensor.co.jp.emergensor.lib.filter.*
 
 

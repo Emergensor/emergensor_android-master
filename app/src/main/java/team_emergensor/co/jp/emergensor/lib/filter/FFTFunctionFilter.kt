@@ -1,7 +1,7 @@
 package team_emergensor.co.jp.emergensor.lib.filter
 
-import team_emergensor.co.jp.emergensor.Entity.Complex
-import team_emergensor.co.jp.emergensor.Entity.Message
+import team_emergensor.co.jp.emergensor.lib.data.Complex
+import team_emergensor.co.jp.emergensor.lib.data.Message
 import team_emergensor.co.jp.emergensor.lib.filter.base.FunctionFilter
 import team_emergensor.co.jp.emergensor.lib.function.FFT
 
