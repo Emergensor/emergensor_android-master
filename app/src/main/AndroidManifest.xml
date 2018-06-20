@@ -3,6 +3,9 @@
     package="team_emergensor.co.jp.emergensor">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION " />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
         android:allowBackup="true"
@@ -30,6 +33,11 @@
             </intent-filter>
         </activity>
 
+        <!-- google maps api -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyCIo08Y34xVSy7DFQ6FU2qOS3nGPWlv_4M" />
+
         <!-- facebook -->
         <meta-data
             android:name="com.facebook.sdk.ApplicationId"
@@ -51,7 +59,8 @@
                 <data android:scheme="@string/fb_login_protocol_scheme" />
             </intent-filter>
         </activity>
-
+        <activity android:name=".presentation.members.MembersActivity" />
+        <activity android:name=".presentation.settings.SettingsActivity" />
     </application>
 
 </manifest>

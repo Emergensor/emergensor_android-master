@@ -13,17 +13,19 @@ import com.facebook.login.widget.LoginButton
 import com.google.firebase.auth.FacebookAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import team_emergensor.co.jp.emergensor.R
 import team_emergensor.co.jp.emergensor.data.firebase.FirebaseDao
-import team_emergensor.co.jp.emergensor.data.repository.FacebookRepository
+import team_emergensor.co.jp.emergensor.data.repository.MyInfoRepository
 import team_emergensor.co.jp.emergensor.presentation.home.HomeActivity
 
 
 class LoginActivity : AppCompatActivity() {
 
     private val callbackManager = CallbackManager.Factory.create()
-    private val facebookRepository = FacebookRepository(this)
+    private val myInfoRepository = MyInfoRepository(this)
+    private val compositeDisposable = CompositeDisposable()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,15 +49,16 @@ class LoginActivity : AppCompatActivity() {
             })
         }
 
+        if (!intent.getBooleanExtra(IS_AUTO_START, true)) return
 
         // if user already login and exist in firebase, intent to map
         FirebaseAuth.getInstance().currentUser?.let {
-            if (FacebookRepository(this).isExistUserInFirebase()) {
+            if (myInfoRepository.isExistUserInFirebase()) {
                 Toast.makeText(applicationContext, "hello, ${it.displayName}", Toast.LENGTH_SHORT).show()
                 val intent = Intent(applicationContext, HomeActivity::class.java)
                 startActivity(intent)
             } else {
-                facebookRepository.getMyInfo()
+                val disposable = myInfoRepository.getMyInfo()
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe { t1, t2 ->
@@ -64,11 +67,12 @@ class LoginActivity : AppCompatActivity() {
                             }
                             val firebaseDao = FirebaseDao(it)
                             firebaseDao.setMyFacebookInfo(t1)
-                            facebookRepository.setExistingInFirebase(true)
+                            myInfoRepository.setExistingInFirebase(true)
                             Toast.makeText(applicationContext, "hello, ${it.displayName}", Toast.LENGTH_SHORT).show()
                             val intent = Intent(applicationContext, HomeActivity::class.java)
                             startActivity(intent)
                         }
+                compositeDisposable.add(disposable)
             }
         }
 
@@ -85,11 +89,12 @@ class LoginActivity : AppCompatActivity() {
                         val intent = Intent(applicationContext, HomeActivity::class.java)
                         startActivity(intent)
                         val firebaseDao = FirebaseDao(task.result.user)
-                        facebookRepository.getMyInfo().subscribeOn(Schedulers.io())
+                        val disposable = myInfoRepository.getMyInfo().subscribeOn(Schedulers.io())
                                 .observeOn(Schedulers.io())
                                 .subscribe { t1, t2 ->
                                     firebaseDao.setMyFacebookInfo(t1)
                                 }
+                        compositeDisposable.add(disposable)
                         finish()
                     } else {
                         // If sign in fails, display a message to the user.
@@ -103,5 +108,14 @@ class LoginActivity : AppCompatActivity() {
     public override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
         super.onActivityResult(requestCode, resultCode, data)
         callbackManager.onActivityResult(requestCode, resultCode, data)
+    }
+
+    override fun onDestroy() {
+        compositeDisposable.dispose()
+        super.onDestroy()
+    }
+
+    companion object {
+        const val IS_AUTO_START = "is auto start"
     }
 }

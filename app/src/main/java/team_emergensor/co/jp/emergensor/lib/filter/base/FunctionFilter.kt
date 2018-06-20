@@ -2,7 +2,7 @@ package team_emergensor.co.jp.emergensor.lib.filter.base
 
 import team_emergensor.co.jp.emergensor.lib.data.Message
 
-abstract class FunctionFilter<T, O>(private val resultBodySize: Int = 1) : Filter.Map<T, O>() {
+abstract class FunctionFilter<in T, out O>(private val resultBodySize: Int = 1) : Filter.Map<T, O>() {
 
     abstract fun getResult(body: Message.Body<T>): O
 
