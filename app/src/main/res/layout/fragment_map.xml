@@ -11,18 +11,10 @@
         android:layout_height="match_parent">
 
         <FrameLayout
+            android:id="@+id/map"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            tools:context="team_emergensor.co.jp.emergensor.presentation.home.MapFragment">
-
-            <!-- google map fragment-->
-            <fragment
-                android:id="@+id/mapFragment"
-                android:name="com.google.android.gms.maps.MapFragment"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-
-        </FrameLayout>
+            tools:context="team_emergensor.co.jp.emergensor.presentation.mapandfeed.MapFragment" />
 
         <LinearLayout
             android:id="@+id/bottom_sheet"
@@ -36,7 +28,7 @@
 
             <fragment
                 android:id="@+id/newsFeedFragment"
-                android:name="team_emergensor.co.jp.emergensor.presentation.home.NewsFeedFragment"
+                android:name="team_emergensor.co.jp.emergensor.presentation.mapandfeed.NewsFeedFragment"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
         </LinearLayout>

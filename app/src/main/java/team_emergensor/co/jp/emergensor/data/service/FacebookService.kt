@@ -7,41 +7,71 @@ import io.reactivex.Single
 import team_emergensor.co.jp.emergensor.domain.entity.FacebookFriend
 import team_emergensor.co.jp.emergensor.domain.entity.MyFacebookInfo
 
+
 class FacebookService {
 
-    fun getMyInfo(): Single<MyFacebookInfo> = Single.create<MyFacebookInfo> {
-        val request = GraphRequest.newMeRequest(
-                AccessToken.getCurrentAccessToken()
-        ) { _, response ->
-
-            val id = response.jsonObject.get("id").toString()
-            val name = response.jsonObject.get("name").toString()
-            val pic = response.jsonObject.getJSONObject("picture").getJSONObject("data").getString("url")
-            val info = MyFacebookInfo(id, name, pic)
-            it.onSuccess(info)
+    fun getMyInfo(): Single<MyFacebookInfo> {
+        var id = ""
+        var name = ""
+        return Single.create<String> {
+            val request = GraphRequest.newMeRequest(
+                    AccessToken.getCurrentAccessToken()
+            ) { _, response ->
+                id = response.jsonObject.get("id").toString()
+                name = response.jsonObject.get("name").toString()
+                it.onSuccess(id)
+            }
+            val parameters = Bundle()
+            parameters.putString("fields", "id,name")
+            request.parameters = parameters
+            request.executeAsync()
+        }.flatMap {
+            getPictureUrl(it)
+        }.map {
+            MyFacebookInfo(id, name, it)
         }
-        val parameters = Bundle()
-        parameters.putString("fields", "id,name,picture")
-        request.parameters = parameters
-        request.executeAndWait()
     }
 
-    fun getFriends(myFacebookInfo: MyFacebookInfo): Single<Array<FacebookFriend>> =
-            Single.create<Array<FacebookFriend>> {
-                val request = GraphRequest.newGraphPathRequest(
-                        AccessToken.getCurrentAccessToken(),
-                        "/${myFacebookInfo.id}/friends"
-                ) { res ->
-                    val result = arrayListOf<FacebookFriend>()
-                    val data = res.jsonObject.getJSONArray("data")
-                    val len = data.length()
-                    for (i in 0 until len) {
-                        val id = data.getJSONObject(i).get("id").toString()
-                        val name = data.getJSONObject(i).get("first_name").toString()
-                        result.add(FacebookFriend(id, name, ""))
-                    }
-                    it.onSuccess(result.toTypedArray())
-                }
-                request.executeAsync()
+    fun getFriends(myFacebookInfo: MyFacebookInfo): Single<Array<FacebookFriend>> {
+        return Single.create<Array<FacebookFriend>> {
+            val request = GraphRequest.newGraphPathRequest(
+                    AccessToken.getCurrentAccessToken(),
+                    "/${myFacebookInfo.id}/friends"
+            ) { res ->
+                // todo: paging
+                val result = arrayListOf<FacebookFriend>()
+//                val data = res.jsonObject.getJSONArray("data")
+//                val len = data.length()
+//                for (i in 0 until len) {
+//                    val id = data.getJSONObject(i).get("id").toString()
+//                    val name = data.getJSONObject(i).get("first_name").toString()
+//                    result.add(FacebookFriend(id, name, ""))
+//                }
+                result.add(FacebookFriend("hoge0", "hoge0", ""))
+                result.add(FacebookFriend("hoge1", "hoge1", ""))
+                result.add(FacebookFriend("hoge2", "hoge2", ""))
+                result.add(FacebookFriend("fuga0", "fuga0", ""))
+                result.add(FacebookFriend("fuga1", "fuga1", ""))
+                result.add(FacebookFriend("fuga2", "fuga2", ""))
+                result.add(FacebookFriend("foo0", "foo0", ""))
+                result.add(FacebookFriend("foo1", "foo1", ""))
+                result.add(FacebookFriend("foo2", "foo2", ""))
+                it.onSuccess(result.toTypedArray())
             }
+            request.executeAsync()
+        }
+    }
+
+    private fun getPictureUrl(id: String): Single<String> {
+        return Single.create<String> {
+            val request = GraphRequest.newGraphPathRequest(
+                    AccessToken.getCurrentAccessToken(),
+                    "/$id/picture?redirect=0&type=large"
+            ) { res ->
+                val url = res.jsonObject.getJSONObject("data").get("url").toString()
+                it.onSuccess(url)
+            }
+            request.executeAsync()
+        }
+    }
 }

@@ -1,14 +1,15 @@
-package team_emergensor.co.jp.emergensor.presentation.home
+package team_emergensor.co.jp.emergensor.presentation.mapandfeed
 
-import android.app.Fragment
 import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.annotation.Nullable
+import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
 import team_emergensor.co.jp.emergensor.R
 import team_emergensor.co.jp.emergensor.databinding.FragmentMapBinding
 
@@ -29,11 +30,22 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 //            startActivity(intent)
 //        }
 
+        if (googleMapFragment == null) {
+            googleMapFragment = SupportMapFragment.newInstance()
+            googleMapFragment?.getMapAsync(this)
+        }
+        val transaction = childFragmentManager.beginTransaction()
+        transaction.replace(R.id.map, googleMapFragment).commit()
         return binding.root
     }
 
     override fun onMapReady(p0: GoogleMap?) {
 
+    }
+
+
+    companion object {
+        var googleMapFragment:SupportMapFragment? = null
     }
 
 }

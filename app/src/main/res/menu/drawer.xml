@@ -3,30 +3,20 @@
 
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/home"
-            android:icon="@android:drawable/ic_menu_my_calendar"
-            android:title="HOME" />
+            android:id="@+id/map"
+            android:icon="@mipmap/ic_map"
+            android:title="MAP" />
         <item
-            android:id="@+id/segings"
-            android:icon="@android:drawable/ic_menu_myplaces"
+            android:id="@+id/members"
+            android:icon="@mipmap/ic_members"
+            android:title="MEMBERS" />
+        <item
+            android:id="@+id/acceleration"
+            android:icon="@mipmap/ic_acceleration"
+            android:title="ACCELERATION" />
+        <item
+            android:id="@+id/settings"
+            android:icon="@mipmap/ic_settings"
             android:title="SETTINGS" />
-        <item
-            android:id="@+id/friends"
-            android:icon="@android:drawable/ic_menu_call"
-            android:title="FRIENDS" />
     </group>
-
-    <!--<item android:title="TITLE!">-->
-        <!--<menu>-->
-            <!--<item-->
-                <!--android:id="@+id/menu_item3"-->
-                <!--android:icon="@android:drawable/ic_menu_save"-->
-                <!--android:title="Save" />-->
-            <!--<item-->
-                <!--android:id="@+id/menu_item4"-->
-                <!--android:icon="@android:drawable/ic_menu_delete"-->
-                <!--android:title="Delete" />-->
-        <!--</menu>-->
-    <!--</item>-->
-
 </menu>

@@ -5,6 +5,11 @@
 
     <data>
 
+        <variable
+            name="viewModel"
+            type="team_emergensor.co.jp.emergensor.presentation.home.HomeViewModel" />
+
+        <import type="android.view.View" />
     </data>
 
     <android.support.v4.widget.DrawerLayout
@@ -20,11 +25,12 @@
             android:orientation="vertical">
 
             <include
-                android:id="@+id/toolBar"
-                layout="@layout/toolbar"
+                android:id="@+id/mapToolBar"
+                layout="@layout/toolbar_map"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_alignParentTop="true" />
+                android:layout_alignParentTop="true"
+                android:visibility="@{safeUnbox(viewModel.mapToolbarVisible) ? View.VISIBLE : View.GONE}" />
 
             <FrameLayout
                 android:id="@+id/fragmentContainer"

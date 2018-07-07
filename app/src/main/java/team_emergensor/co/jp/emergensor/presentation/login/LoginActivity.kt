@@ -23,8 +23,12 @@ import team_emergensor.co.jp.emergensor.presentation.home.HomeActivity
 
 class LoginActivity : AppCompatActivity() {
 
-    private val callbackManager = CallbackManager.Factory.create()
-    private val myInfoRepository = MyInfoRepository(this)
+    private val callbackManager by lazy {
+        CallbackManager.Factory.create()
+    }
+    private val myInfoRepository by lazy {
+        MyInfoRepository(this)
+    }
     private val compositeDisposable = CompositeDisposable()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,7 +36,7 @@ class LoginActivity : AppCompatActivity() {
         setContentView(R.layout.activity_login)
 
         // Initialize Facebook Login button
-        val loginButton = findViewById<LoginButton>(R.id.login_button)
+        val loginButton: LoginButton = findViewById(R.id.login_button)
         loginButton.apply {
             setReadPermissions("email", "public_profile", "user_friends")
             registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
@@ -74,6 +78,7 @@ class LoginActivity : AppCompatActivity() {
                         }
                 compositeDisposable.add(disposable)
             }
+            finish()
         }
 
     }
@@ -89,7 +94,7 @@ class LoginActivity : AppCompatActivity() {
                         val intent = Intent(applicationContext, HomeActivity::class.java)
                         startActivity(intent)
                         val firebaseDao = FirebaseDao(task.result.user)
-                        val disposable = myInfoRepository.getMyInfo().subscribeOn(Schedulers.io())
+                        val disposable = myInfoRepository.fetchMyInfo().subscribeOn(Schedulers.io())
                                 .observeOn(Schedulers.io())
                                 .subscribe { t1, t2 ->
                                     firebaseDao.setMyFacebookInfo(t1)
@@ -101,6 +106,12 @@ class LoginActivity : AppCompatActivity() {
                         Toast.makeText(this, "login failed: ${task.exception?.message}",
                                 Toast.LENGTH_SHORT).show()
                     }
+                }
+                .addOnCanceledListener {
+                    val hoge = ""
+                }
+                .addOnFailureListener {
+                    val hoge = it
                 }
 
     }

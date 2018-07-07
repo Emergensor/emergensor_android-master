@@ -1,11 +1,11 @@
 package team_emergensor.co.jp.emergensor.presentation.home
 
+import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
 import android.databinding.DataBindingUtil
 import android.os.Build
 import android.os.Bundle
-import android.support.design.widget.NavigationView
-import android.support.v4.view.GravityCompat
+import android.support.v4.app.Fragment
 import android.support.v7.app.ActionBarDrawerToggle
 import android.util.Log
 import android.view.WindowManager
@@ -17,6 +17,9 @@ import team_emergensor.co.jp.emergensor.data.repository.MyInfoRepository
 import team_emergensor.co.jp.emergensor.databinding.ActivityHomeBinding
 import team_emergensor.co.jp.emergensor.databinding.DrawerHeaderBinding
 import team_emergensor.co.jp.emergensor.presentation.BaseActivity
+import team_emergensor.co.jp.emergensor.presentation.mapandfeed.MapFragment
+import team_emergensor.co.jp.emergensor.presentation.members.MembersFragment
+import team_emergensor.co.jp.emergensor.presentation.settings.SettingsFragment
 
 
 class HomeActivity : BaseActivity() {
@@ -33,30 +36,24 @@ class HomeActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        initMap()
+        binding.viewModel = homeViewModel
+        binding.setLifecycleOwner(this)
+        initFragment()
         initDrawer()
+        initSubscribe()
     }
 
     private val navigationHeaderViewModel by lazy {
         ViewModelProviders.of(this).get(NavigationHeaderViewModel::class.java)
     }
 
-    private fun initDrawer() {
-        compositeDisposable.add(
-                myInfoRepository.getMyInfo()
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe { it, e ->
-                            e?.let {
-                                Log.e("getmyinfo", e.message)
-                                return@subscribe
-                            }
-                            navigationHeaderViewModel.setMyInfo(it)
-                        })
+    private val homeViewModel by lazy {
+        ViewModelProviders.of(this).get(HomeViewModel::class.java)
+    }
 
-        binding.toolBar?.findViewById<android.support.v7.widget.Toolbar>(R.id.toolBar).apply {
+    private fun initDrawer() {
+        binding.mapToolBar?.findViewById<android.support.v7.widget.Toolbar>(R.id.mapToolBar).apply {
             title = ""
-            setSupportActionBar(this)
             setSupportActionBar(this)
             val actionBarDrawerToggle = ActionBarDrawerToggle(
                     this@HomeActivity,
@@ -68,38 +65,85 @@ class HomeActivity : BaseActivity() {
             actionBarDrawerToggle.syncState()
         }
 
-        binding.navigationView.apply {
-            setNavigationItemSelectedListener(navigationViewListener)
+        binding.navigationView.run {
+            setNavigationItemSelectedListener(homeViewModel.navigationViewListener)
             DataBindingUtil.bind<DrawerHeaderBinding>(getHeaderView(0))
             val headerBinding = DataBindingUtil.getBinding<DrawerHeaderBinding>(getHeaderView(0))
+            headerBinding?.setLifecycleOwner(this@HomeActivity)
             headerBinding?.viewModel = navigationHeaderViewModel
         }
     }
 
-    private fun initMap() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            window.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
-        }
+    private fun initFragment() {
+        setWindowFullScreen(true)
         binding.fragmentContainer.apply {
             val fragment = MapFragment()
-            val fragmentManager = fragmentManager
+            val fragmentManager = supportFragmentManager
             fragmentManager.beginTransaction()
                     .replace(R.id.fragmentContainer, fragment)
                     .commit()
         }
     }
 
-    private val navigationViewListener = NavigationView.OnNavigationItemSelectedListener {
-        val fragmentManager = fragmentManager
-        when (it.itemId) {
-            R.id.home -> {
-                val fragment = MapFragment()
-                fragmentManager.beginTransaction()
-                        .replace(R.id.fragmentContainer, fragment)
-                        .commit()
+    private fun initSubscribe() {
+
+        compositeDisposable.add(
+                myInfoRepository.getMyInfo()
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe { it, e ->
+                            e?.let {
+                                Log.e("get my info", e.message)
+                                return@subscribe
+                            }
+                            navigationHeaderViewModel.facebookInfo = it
+                        })
+
+        homeViewModel.replaceFragmentPublisher.observe(this, Observer<HomeViewModel.State> {
+            val fragmentManager = supportFragmentManager
+            var fragment: Fragment? = null
+            when (it) {
+                HomeViewModel.State.HOME -> {
+                    setWindowFullScreen(true)
+                    binding.navigationView.menu.getItem(0).isChecked = true
+                    fragment = MapFragment()
+                }
+                HomeViewModel.State.MEMBERS -> {
+                    setWindowFullScreen(false)
+                    binding.navigationView.menu.getItem(1).isChecked = true
+                    fragment = MembersFragment()
+                }
+                HomeViewModel.State.SETTINGS -> {
+                    setWindowFullScreen(false)
+                    binding.navigationView.menu.getItem(3).isChecked = true
+                    fragment = SettingsFragment()
+                }
+            }
+            fragmentManager.beginTransaction()
+                    .replace(R.id.fragmentContainer, fragment)
+                    .commit()
+        })
+
+        homeViewModel.drawerShouldClosePublisher.observe(this, Observer<Boolean> {
+            val shouldClose = it ?: return@Observer
+            if (shouldClose) {
+                binding.drawerLayout.closeDrawer(android.support.v4.view.GravityCompat.START)
+            }
+        })
+    }
+
+    private fun setWindowFullScreen(boolean: Boolean) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            if (boolean) {
+                window.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
+            } else {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
             }
         }
-        binding.drawerLayout.closeDrawer(GravityCompat.START)
-        return@OnNavigationItemSelectedListener true
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        compositeDisposable.dispose()
     }
 }

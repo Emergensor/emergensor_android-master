@@ -60,7 +60,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".presentation.members.MembersActivity" />
-        <activity android:name=".presentation.settings.SettingsActivity" />
+        <activity android:name=".presentation.settings.SettingsFragment" />
     </application>
 
 </manifest>

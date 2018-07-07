@@ -12,7 +12,7 @@ class MyInfoRepository(private val context: Context) : Repository(context) {
         FacebookService()
     }
 
-    fun setMyInfo(myFacebookInfo: MyFacebookInfo) {
+    private fun setMyInfo(myFacebookInfo: MyFacebookInfo) {
         Prefs.with(context).write(ID_KEY, myFacebookInfo.id)
         Prefs.with(context).write(NAME_KEY, myFacebookInfo.name)
         Prefs.with(context).write(PIC_KEY, myFacebookInfo.pictureUrl)
@@ -32,6 +32,12 @@ class MyInfoRepository(private val context: Context) : Repository(context) {
             }
         }
     }
+
+    fun fetchMyInfo() =
+            facebookService.getMyInfo().flatMap {
+                setMyInfo(it)
+                Single.fromCallable { it }
+            }
 
     fun isExistUserInFirebase(): Boolean {
         return Prefs.with(context).readBoolean(EXIST_IN_FIREBASE)

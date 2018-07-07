@@ -8,8 +8,11 @@ class NavigationHeaderViewModel : ViewModel() {
     val name = MutableLiveData<String>()
     val url = MutableLiveData<String>()
 
-    fun setMyInfo(myFacebookInfo: MyFacebookInfo) {
-        name.value = myFacebookInfo.name
-        url.value = myFacebookInfo.pictureUrl
-    }
+    var facebookInfo: MyFacebookInfo? = null
+        set(value) {
+            if (value == null) return
+            field = value
+            name.postValue(value.name)
+            url.postValue(value.pictureUrl)
+        }
 }
