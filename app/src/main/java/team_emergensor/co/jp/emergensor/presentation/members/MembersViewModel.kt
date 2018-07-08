@@ -2,43 +2,29 @@ package team_emergensor.co.jp.emergensor.presentation.members
 
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
-import android.view.View
-import team_emergensor.co.jp.emergensor.domain.entity.FacebookFriend
+import team_emergensor.co.jp.emergensor.domain.entity.FollowingUser
 
-class MembersViewModel : ViewModel() {
-
+class MembersViewModel : ViewModel(), MemberViewModel.FollowListener {
     val adapter = MembersAdapter(arrayOf())
 
-    val backPublisher = MutableLiveData<Unit>()
-    val followPublisher = MutableLiveData<String>()
-    val unfollowPublisher = MutableLiveData<String>()
+    val followPublisher = MutableLiveData<Pair<Boolean, String>>()
 
-    val uid = MutableLiveData<String>()
-
-    fun setMember(members: Array<FacebookFriend>) {
+    fun setMember(members: Array<FollowingUser>) {
         adapter.memberViewModels.clear()
         val vms = members.map {
-            MemberViewModel(it)
+            MemberViewModel(it, this)
         }
         adapter.memberViewModels.addAll(vms)
     }
 
-    fun addMember(members: Array<FacebookFriend>) {
+    fun addMember(members: Array<FollowingUser>) {
         val vms = members.map {
-            MemberViewModel(it)
+            MemberViewModel(it, this)
         }
         adapter.memberViewModels.addAll(vms)
     }
 
-    fun back(view: View) {
-        backPublisher.postValue(Unit)
-    }
-
-    fun follow(id: String) {
-        followPublisher.postValue(id)
-    }
-
-    fun unfollow(id: String) {
-        unfollowPublisher.postValue(id)
+    override fun follow(id: String, isFollow: Boolean) {
+        followPublisher.postValue(Pair(isFollow, id))
     }
 }

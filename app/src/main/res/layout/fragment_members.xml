@@ -14,13 +14,6 @@
         android:orientation="vertical"
         tools:context="team_emergensor.co.jp.emergensor.presentation.members.MembersFragment">
 
-        <Button
-            android:id="@+id/back"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:onClick="@{viewModel::back}"
-            android:text="back" />
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"

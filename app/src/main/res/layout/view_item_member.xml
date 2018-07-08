@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android">
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <data>
 
@@ -8,15 +9,48 @@
             type="team_emergensor.co.jp.emergensor.presentation.members.MemberViewModel" />
     </data>
 
-    <LinearLayout
+
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="300dp"
-        android:orientation="vertical">
+        android:layout_height="120dp">
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/image"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="15dp"
+            android:layout_marginStart="15dp"
+            app:userImageUrl="@{viewModel.url}" />
 
         <TextView
-            android:text="@{viewModel.name}"
+            android:id="@+id/name"
             android:layout_width="match_parent"
-            android:layout_height="40dp" />
+            android:layout_height="30dp"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="15dp"
+            android:layout_marginStart="15dp"
+            android:layout_toEndOf="@+id/image"
+            android:layout_toLeftOf="@+id/button"
+            android:layout_toRightOf="@+id/image"
+            android:layout_toStartOf="@+id/button"
+            android:text="@{viewModel.name}" />
 
-    </LinearLayout>
+        <Button
+            android:id="@+id/button"
+            android:layout_width="80dp"
+            android:layout_height="40dp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="15dp"
+            android:layout_marginRight="15dp"
+            android:background="@{viewModel.follow ? @color/white : @color/orange}"
+            android:onClick="@{viewModel::followChange}"
+            android:text="@{viewModel.follow ? @string/button_unfollow : @string/button_follow}"
+            android:textSize="10sp" />
+
+    </RelativeLayout>
 </layout>

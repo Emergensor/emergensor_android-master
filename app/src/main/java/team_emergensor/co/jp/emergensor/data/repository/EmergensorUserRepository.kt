@@ -4,33 +4,40 @@ import android.content.Context
 import es.dmoral.prefs.Prefs
 import io.reactivex.Single
 import team_emergensor.co.jp.emergensor.data.service.FacebookService
-import team_emergensor.co.jp.emergensor.domain.entity.MyFacebookInfo
+import team_emergensor.co.jp.emergensor.domain.entity.EmergensorUser
 
-class MyInfoRepository(private val context: Context) : Repository(context) {
+class EmergensorUserRepository(private val context: Context) : Repository(context) {
 
     private val facebookService by lazy {
         FacebookService()
     }
 
-    private fun setMyInfo(myFacebookInfo: MyFacebookInfo) {
-        Prefs.with(context).write(ID_KEY, myFacebookInfo.id)
-        Prefs.with(context).write(NAME_KEY, myFacebookInfo.name)
-        Prefs.with(context).write(PIC_KEY, myFacebookInfo.pictureUrl)
+    private fun setMyInfo(emergensorUser: EmergensorUser) {
+        Prefs.with(context).write(ID_KEY, emergensorUser.id)
+        Prefs.with(context).write(NAME_KEY, emergensorUser.name)
+        Prefs.with(context).write(PIC_KEY, emergensorUser.pictureUrl)
     }
 
-    fun getMyInfo(): Single<MyFacebookInfo> {
+    fun getMyInfoWithAsync(): Single<EmergensorUser> {
         val id = Prefs.with(context).read(ID_KEY, "")
         val name = Prefs.with(context).read(NAME_KEY, "")
         val picUrl = Prefs.with(context).read(PIC_KEY, "")
 
         return if (id.isNotEmpty() and name.isNotEmpty()) {
-            Single.fromCallable { MyFacebookInfo(id, name, picUrl) }
+            Single.fromCallable { EmergensorUser(id, name, picUrl) }
         } else {
             facebookService.getMyInfo().flatMap {
                 setMyInfo(it)
                 Single.fromCallable { it }
             }
         }
+    }
+
+    fun getMyInfoLocal(): EmergensorUser {
+        val id = Prefs.with(context).read(ID_KEY, "")
+        val name = Prefs.with(context).read(NAME_KEY, "")
+        val picUrl = Prefs.with(context).read(PIC_KEY, "")
+        return EmergensorUser(id, name, picUrl)
     }
 
     fun fetchMyInfo() =
@@ -48,7 +55,7 @@ class MyInfoRepository(private val context: Context) : Repository(context) {
     }
 
     companion object {
-        const val ID_KEY = "id key"
+        const val ID_KEY = "firebase_id key"
         const val NAME_KEY = "name key"
         const val PIC_KEY = "pic key"
         const val EXIST_IN_FIREBASE = "exist in firebase"

@@ -16,8 +16,6 @@
         android:orientation="vertical"
         tools:context="team_emergensor.co.jp.emergensor.presentation.settings.SettingsFragment">
 
-        <include layout="@layout/toolbar_settings" />
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">

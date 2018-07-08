@@ -2,13 +2,13 @@ package team_emergensor.co.jp.emergensor.presentation.home
 
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
-import team_emergensor.co.jp.emergensor.domain.entity.MyFacebookInfo
+import team_emergensor.co.jp.emergensor.domain.entity.EmergensorUser
 
 class NavigationHeaderViewModel : ViewModel() {
     val name = MutableLiveData<String>()
     val url = MutableLiveData<String>()
 
-    var facebookInfo: MyFacebookInfo? = null
+    var facebookInfo: EmergensorUser? = null
         set(value) {
             if (value == null) return
             field = value

@@ -1,62 +1,111 @@
 package team_emergensor.co.jp.emergensor.data.firebase
 
 import android.util.Log
-import com.google.firebase.auth.FirebaseUser
+import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.FirebaseFirestore
-import team_emergensor.co.jp.emergensor.domain.entity.MyFacebookInfo
-import team_emergensor.co.jp.emergensor.domain.entity.MyFirebaseUser
+import com.google.firebase.firestore.QuerySnapshot
+import io.reactivex.Observable
+import io.reactivex.Single
+import team_emergensor.co.jp.emergensor.domain.entity.EmergensorUser
+import team_emergensor.co.jp.emergensor.domain.entity.FacebookFriend
+import team_emergensor.co.jp.emergensor.domain.entity.FollowingUser
 
 
-class FirebaseDao(private val firebaseUser: FirebaseUser) {
+class FirebaseDao() {
     private val db = FirebaseFirestore.getInstance()
 
-    fun follow(uid: String) {
-        val map = HashMap<String, Any?>()
-        map["uid"] = uid
-        db.collection("users")
-                .document(firebaseUser.uid)
-                .collection("following")
-                .document(uid)
-                .set(map)
-                .addOnSuccessListener { Log.d("follow", "success") }
-                .addOnFailureListener { }
-        map["uid"] = firebaseUser.uid
-        db.collection("users")
-                .document(uid)
-                .collection("followed")
-                .document(firebaseUser.uid)
-                .set(map)
-                .addOnSuccessListener { Log.d("follow", "success") }
-                .addOnFailureListener { }
+    fun follow(emergensorUser: EmergensorUser, uid: String, isFollow: Boolean) {
+
+        val followingMap = HashMap<String, Any?>()
+        followingMap["follow"] = isFollow
+        userRef.document(emergensorUser.id).collection("following").document(uid).update(followingMap)
+
+        val followedMap = HashMap<String, Any?>()
+        followedMap["followed"] = isFollow
+        db.collection("users").document(uid).collection("following").document(emergensorUser.id).update(followedMap)
+
     }
 
-    fun unfollow(uid: String) {
+    fun setMyFacebookInfo(emergensorUser: EmergensorUser) {
         db.collection("users")
-                .document(firebaseUser.uid)
-                .collection("following")
-                .document(uid)
-                .delete()
-                .addOnSuccessListener { Log.d("follow", "success") }
-                .addOnFailureListener { }
-        db.collection("users")
-                .document(uid)
-                .collection("followed")
-                .document(firebaseUser.uid)
-                .set(firebaseUser.uid)
-                .addOnSuccessListener { }
-                .addOnFailureListener { Log.d("follow", "success") }
-    }
-
-    fun setMyFacebookInfo(myFacebookInfo: MyFacebookInfo) {
-        val firebaseUser = MyFirebaseUser(firebaseUser.uid, myFacebookInfo.name, myFacebookInfo.pictureUrl)
-
-        db.collection("users")
-                .document(this.firebaseUser.uid)
-                .set(firebaseUser)
+                .document(emergensorUser.id)
+                .set(emergensorUser)
                 .addOnSuccessListener { }
                 .addOnFailureListener { e -> Log.w(TAG, "Error adding document", e) }
-
     }
+
+    fun addFacebookUsers(emergensorUser: EmergensorUser, users: Array<FacebookFriend>): Single<Unit> {
+        return Single.create<Unit> { result ->
+            val task: Task<QuerySnapshot> = userRef.document(emergensorUser.id).collection("following").get().addOnCompleteListener { task ->
+                if (task.exception != null) {
+                    result.onError(Throwable())
+                    return@addOnCompleteListener
+                }
+                val qsp = task.result
+                val notExistUsers = users.filterNot { user -> qsp.map { it.id }.contains(user.id) }
+                notExistUsers.forEach {
+                    val map = HashMap<String, Any?>()
+                    map["facebook_id"] = it.id
+                    map["name"] = it.name
+                    map["picture"] = it.picture
+                    map["follow"] = false
+                    db.collection("users").document(it.id).collection("following").document(emergensorUser.id).get().addOnCompleteListener { task ->
+                        if (task.exception != null) {
+                            result.onError(Throwable())
+                            return@addOnCompleteListener
+                        }
+                        val document = task.result
+                        map["followed"] = if (document.exists()) {
+                            document.get("follow") as Boolean
+                        } else {
+                            false
+                        }
+                        userRef.document(emergensorUser.id).collection("following").document(it.id).set(map)
+                    }
+                }
+                result.onSuccess(Unit)
+            }
+        }
+    }
+
+    fun observeFollowsAndNotFollows(emergensorUser: EmergensorUser): Observable<Pair<Array<FollowingUser>, Array<FollowingUser>>> {
+        return Observable.create<Pair<Array<FollowingUser>, Array<FollowingUser>>> {
+            userRef.document(emergensorUser.id).collection("following").addSnapshotListener { querySnapshot, firebaseFirestoreException ->
+                if (firebaseFirestoreException != null) {
+                    it.onError(firebaseFirestoreException)
+                    return@addSnapshotListener
+                }
+                val qsp = querySnapshot ?: return@addSnapshotListener
+                val mutableListFollowing = qsp.documents.filter { it["follow"] as Boolean }.mapNotNull {
+                    FollowingUser(it["facebook_id"].toString(), it["name"].toString(), it["picture"].toString(), it["follow"] as Boolean, it["followed"] as Boolean)
+                }
+                val mutableListNotFollowing = qsp.documents.filter { !(it["follow"] as Boolean) }.mapNotNull {
+                    FollowingUser(it["facebook_id"].toString(), it["name"].toString(), it["picture"].toString(), it["follow"] as Boolean, it["followed"] as Boolean)
+                }
+                it.onNext(Pair(mutableListFollowing.toTypedArray(), mutableListNotFollowing.toTypedArray()))
+            }
+
+        }
+    }
+
+    fun observeFollowing(emergensorUser: EmergensorUser): Observable<Array<FollowingUser>> {
+        return Observable.create<Array<FollowingUser>> {
+            userRef.document(emergensorUser.id).collection("following").addSnapshotListener { querySnapshot, firebaseFirestoreException ->
+                if (firebaseFirestoreException != null) {
+                    it.onError(firebaseFirestoreException)
+                    return@addSnapshotListener
+                }
+                val qsp = querySnapshot ?: return@addSnapshotListener
+                val mutableListFollowing = qsp.documents.mapNotNull {
+                    val hoge = it
+                    FollowingUser(it["facebook_id"].toString(), it["name"].toString(), it["picture"].toString(), it["follow"] as Boolean, it["followed"] as Boolean)
+                }
+                it.onNext(mutableListFollowing.toTypedArray())
+            }
+        }
+    }
+
+    private val userRef = db.collection("users")
 
     companion object {
         const val TAG = "firebase dao"

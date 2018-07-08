@@ -32,10 +32,19 @@
                 android:layout_alignParentTop="true"
                 android:visibility="@{safeUnbox(viewModel.mapToolbarVisible) ? View.VISIBLE : View.GONE}" />
 
+            <include
+                android:id="@+id/normalToolBar"
+                layout="@layout/toolbar_normal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:visibility="@{safeUnbox(viewModel.mapToolbarVisible) ? View.GONE : View.VISIBLE}" />
+
             <FrameLayout
                 android:id="@+id/fragmentContainer"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent"
+                android:layout_below="@+id/normalToolBar" />
         </RelativeLayout>
 
         <android.support.design.widget.NavigationView

@@ -4,13 +4,13 @@ import android.os.Bundle
 import com.facebook.AccessToken
 import com.facebook.GraphRequest
 import io.reactivex.Single
+import team_emergensor.co.jp.emergensor.domain.entity.EmergensorUser
 import team_emergensor.co.jp.emergensor.domain.entity.FacebookFriend
-import team_emergensor.co.jp.emergensor.domain.entity.MyFacebookInfo
 
 
 class FacebookService {
 
-    fun getMyInfo(): Single<MyFacebookInfo> {
+    fun getMyInfo(): Single<EmergensorUser> {
         var id = ""
         var name = ""
         return Single.create<String> {
@@ -28,25 +28,25 @@ class FacebookService {
         }.flatMap {
             getPictureUrl(it)
         }.map {
-            MyFacebookInfo(id, name, it)
+            EmergensorUser(id, name, it)
         }
     }
 
-    fun getFriends(myFacebookInfo: MyFacebookInfo): Single<Array<FacebookFriend>> {
+    fun getFriends(emergensorUser: EmergensorUser): Single<Array<FacebookFriend>> {
         return Single.create<Array<FacebookFriend>> {
             val request = GraphRequest.newGraphPathRequest(
                     AccessToken.getCurrentAccessToken(),
-                    "/${myFacebookInfo.id}/friends"
+                    "/${emergensorUser.id}/friends"
             ) { res ->
                 // todo: paging
                 val result = arrayListOf<FacebookFriend>()
-//                val data = res.jsonObject.getJSONArray("data")
-//                val len = data.length()
-//                for (i in 0 until len) {
-//                    val id = data.getJSONObject(i).get("id").toString()
-//                    val name = data.getJSONObject(i).get("first_name").toString()
-//                    result.add(FacebookFriend(id, name, ""))
-//                }
+                val data = res.jsonObject.getJSONArray("data")
+                val len = data.length()
+                for (i in 0 until len) {
+                    val id = data.getJSONObject(i).get("id").toString()
+                    val name = data.getJSONObject(i).get("name").toString()
+                    result.add(FacebookFriend(id, name, ""))
+                }
                 result.add(FacebookFriend("hoge0", "hoge0", ""))
                 result.add(FacebookFriend("hoge1", "hoge1", ""))
                 result.add(FacebookFriend("hoge2", "hoge2", ""))

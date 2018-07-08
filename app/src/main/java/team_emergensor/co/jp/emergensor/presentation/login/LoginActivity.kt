@@ -3,6 +3,7 @@ package team_emergensor.co.jp.emergensor.presentation.login
 import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.widget.Toast
 import com.facebook.AccessToken
 import com.facebook.CallbackManager
@@ -17,7 +18,7 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import team_emergensor.co.jp.emergensor.R
 import team_emergensor.co.jp.emergensor.data.firebase.FirebaseDao
-import team_emergensor.co.jp.emergensor.data.repository.MyInfoRepository
+import team_emergensor.co.jp.emergensor.data.repository.EmergensorUserRepository
 import team_emergensor.co.jp.emergensor.presentation.home.HomeActivity
 
 
@@ -26,8 +27,8 @@ class LoginActivity : AppCompatActivity() {
     private val callbackManager by lazy {
         CallbackManager.Factory.create()
     }
-    private val myInfoRepository by lazy {
-        MyInfoRepository(this)
+    private val emergensorUserRepository by lazy {
+        EmergensorUserRepository(this)
     }
     private val compositeDisposable = CompositeDisposable()
 
@@ -57,28 +58,30 @@ class LoginActivity : AppCompatActivity() {
 
         // if user already login and exist in firebase, intent to map
         FirebaseAuth.getInstance().currentUser?.let {
-            if (myInfoRepository.isExistUserInFirebase()) {
+            if (emergensorUserRepository.isExistUserInFirebase()) {
                 Toast.makeText(applicationContext, "hello, ${it.displayName}", Toast.LENGTH_SHORT).show()
                 val intent = Intent(applicationContext, HomeActivity::class.java)
                 startActivity(intent)
+                finish()
             } else {
-                val disposable = myInfoRepository.getMyInfo()
+                val disposable = emergensorUserRepository.getMyInfoWithAsync()
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe { t1, t2 ->
                             t2?.let {
+                                Log.d("login activity", it.message)
                                 return@subscribe
                             }
-                            val firebaseDao = FirebaseDao(it)
+                            val firebaseDao = FirebaseDao()
                             firebaseDao.setMyFacebookInfo(t1)
-                            myInfoRepository.setExistingInFirebase(true)
+                            emergensorUserRepository.setExistingInFirebase(true)
                             Toast.makeText(applicationContext, "hello, ${it.displayName}", Toast.LENGTH_SHORT).show()
                             val intent = Intent(applicationContext, HomeActivity::class.java)
                             startActivity(intent)
+                            finish()
                         }
                 compositeDisposable.add(disposable)
             }
-            finish()
         }
 
     }
@@ -93,14 +96,14 @@ class LoginActivity : AppCompatActivity() {
                         Toast.makeText(applicationContext, "login success", Toast.LENGTH_SHORT).show()
                         val intent = Intent(applicationContext, HomeActivity::class.java)
                         startActivity(intent)
-                        val firebaseDao = FirebaseDao(task.result.user)
-                        val disposable = myInfoRepository.fetchMyInfo().subscribeOn(Schedulers.io())
+                        val firebaseDao = FirebaseDao()
+                        val disposable = emergensorUserRepository.fetchMyInfo().subscribeOn(Schedulers.io())
                                 .observeOn(Schedulers.io())
                                 .subscribe { t1, t2 ->
                                     firebaseDao.setMyFacebookInfo(t1)
+                                    finish()
                                 }
                         compositeDisposable.add(disposable)
-                        finish()
                     } else {
                         // If sign in fails, display a message to the user.
                         Toast.makeText(this, "login failed: ${task.exception?.message}",

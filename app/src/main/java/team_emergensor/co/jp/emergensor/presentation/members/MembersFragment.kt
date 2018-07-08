@@ -8,7 +8,6 @@ import android.os.Bundle
 import android.support.annotation.Nullable
 import android.support.v4.app.Fragment
 import android.support.v7.widget.LinearLayoutManager
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,7 +18,6 @@ import team_emergensor.co.jp.emergensor.R
 import team_emergensor.co.jp.emergensor.data.repository.FriendsRepository
 import team_emergensor.co.jp.emergensor.databinding.FragmentMembersBinding
 import team_emergensor.co.jp.emergensor.presentation.home.HomeActivity
-import team_emergensor.co.jp.emergensor.presentation.home.HomeViewModel
 
 class MembersFragment : Fragment() {
 
@@ -47,23 +45,20 @@ class MembersFragment : Fragment() {
     }
 
     private fun initSubscribe() {
+        friendsRepository.registerFacebookFriends()
+                .subscribe()
         compositeDisposable.add(
-                friendsRepository.getFriends()
+                friendsRepository.observeFollowing()
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe { friends, e ->
-                            e?.let {
-                                Log.e(TAG, it.message)
-                                return@let
-                            }
+                        .subscribe { friends ->
                             membersViewModel.setMember(friends)
                         }
         )
-        val observer = Observer<Unit> {
-            ViewModelProviders.of(activity as HomeActivity).get(HomeViewModel::class.java).backHome()
-        }
-        membersViewModel.backPublisher.observe(activity as HomeActivity, Observer {
-            ViewModelProviders.of(activity as HomeActivity).get(HomeViewModel::class.java).backHome()
+        membersViewModel.followPublisher.observe(this, Observer {
+            val isFollow = it?.first ?: return@Observer
+            val uid = it.second
+            friendsRepository.follow(uid, isFollow)
         })
     }
 

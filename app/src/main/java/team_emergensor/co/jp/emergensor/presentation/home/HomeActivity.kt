@@ -13,7 +13,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import team_emergensor.co.jp.emergensor.R
-import team_emergensor.co.jp.emergensor.data.repository.MyInfoRepository
+import team_emergensor.co.jp.emergensor.data.repository.EmergensorUserRepository
 import team_emergensor.co.jp.emergensor.databinding.ActivityHomeBinding
 import team_emergensor.co.jp.emergensor.databinding.DrawerHeaderBinding
 import team_emergensor.co.jp.emergensor.presentation.BaseActivity
@@ -29,7 +29,7 @@ class HomeActivity : BaseActivity() {
     }
 
     private val myInfoRepository by lazy {
-        MyInfoRepository(this)
+        EmergensorUserRepository(this)
     }
 
     private val compositeDisposable = CompositeDisposable()
@@ -52,7 +52,7 @@ class HomeActivity : BaseActivity() {
     }
 
     private fun initDrawer() {
-        binding.mapToolBar?.findViewById<android.support.v7.widget.Toolbar>(R.id.mapToolBar).apply {
+        binding.mapToolBar?.findViewById<android.support.v7.widget.Toolbar>(R.id.mapToolBar)?.apply {
             title = ""
             setSupportActionBar(this)
             val actionBarDrawerToggle = ActionBarDrawerToggle(
@@ -88,7 +88,7 @@ class HomeActivity : BaseActivity() {
     private fun initSubscribe() {
 
         compositeDisposable.add(
-                myInfoRepository.getMyInfo()
+                myInfoRepository.getMyInfoWithAsync()
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe { it, e ->
@@ -102,6 +102,7 @@ class HomeActivity : BaseActivity() {
         homeViewModel.replaceFragmentPublisher.observe(this, Observer<HomeViewModel.State> {
             val fragmentManager = supportFragmentManager
             var fragment: Fragment? = null
+            var title = ""
             when (it) {
                 HomeViewModel.State.HOME -> {
                     setWindowFullScreen(true)
@@ -112,22 +113,56 @@ class HomeActivity : BaseActivity() {
                     setWindowFullScreen(false)
                     binding.navigationView.menu.getItem(1).isChecked = true
                     fragment = MembersFragment()
+                    title = "MEMBERS"
                 }
                 HomeViewModel.State.SETTINGS -> {
                     setWindowFullScreen(false)
                     binding.navigationView.menu.getItem(3).isChecked = true
                     fragment = SettingsFragment()
+                    title = "SETTINGS"
                 }
             }
             fragmentManager.beginTransaction()
                     .replace(R.id.fragmentContainer, fragment)
                     .commit()
+            supportActionBar?.title = title
         })
 
         homeViewModel.drawerShouldClosePublisher.observe(this, Observer<Boolean> {
             val shouldClose = it ?: return@Observer
             if (shouldClose) {
                 binding.drawerLayout.closeDrawer(android.support.v4.view.GravityCompat.START)
+            }
+        })
+
+        homeViewModel.mapToolbarVisible.observe(this, Observer {
+            val isMap = it ?: return@Observer
+            if (isMap) {
+                binding.mapToolBar?.findViewById<android.support.v7.widget.Toolbar>(R.id.mapToolBar).apply {
+                    title = ""
+                    setSupportActionBar(this)
+                    val actionBarDrawerToggle = ActionBarDrawerToggle(
+                            this@HomeActivity,
+                            binding.drawerLayout,
+                            this,
+                            0, 0
+                    )
+                    binding.drawerLayout.addDrawerListener(actionBarDrawerToggle)
+                    actionBarDrawerToggle.syncState()
+                }
+            } else {
+                binding.normalToolBar?.findViewById<android.support.v7.widget.Toolbar>(R.id.normalToolBar).apply {
+                    title = ""
+                    setSupportActionBar(this)
+                    val actionBarDrawerToggle = ActionBarDrawerToggle(
+                            this@HomeActivity,
+                            binding.drawerLayout,
+                            this,
+                            0, 0
+                    )
+                    binding.drawerLayout.addDrawerListener(actionBarDrawerToggle)
+                    actionBarDrawerToggle.syncState()
+                }
             }
         })
     }

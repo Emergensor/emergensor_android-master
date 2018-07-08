@@ -2,9 +2,13 @@ package team_emergensor.co.jp.emergensor.utility
 
 import android.databinding.BindingAdapter
 import android.widget.ImageView
-import com.bumptech.glide.Glide
+import team_emergensor.co.jp.emergensor.R
 
-@BindingAdapter("imageUrl")
+@BindingAdapter("userImageUrl")
 fun ImageView.loadImage(url: String?) {
-    Glide.with(this.context).load(url).into(this)
+    GlideApp.with(this.context)
+            .load(url)
+            .placeholder(R.color.gray)
+            .into(this)
+
 }
