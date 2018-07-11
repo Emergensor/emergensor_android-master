@@ -43,9 +43,9 @@ class FacebookService {
                 val data = res.jsonObject.getJSONArray("data")
                 val len = data.length()
                 for (i in 0 until len) {
-                    val id = data.getJSONObject(i).get("id").toString()
+                    val firebase_id = data.getJSONObject(i).get("id").toString()
                     val name = data.getJSONObject(i).get("name").toString()
-                    result.add(FacebookFriend(id, name, ""))
+                    result.add(FacebookFriend(firebase_id, name, ""))
                 }
                 result.add(FacebookFriend("hoge0", "hoge0", ""))
                 result.add(FacebookFriend("hoge1", "hoge1", ""))

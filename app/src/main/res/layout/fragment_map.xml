@@ -4,6 +4,10 @@
 
     <data>
 
+        <variable
+            name="viewModel"
+            type="team_emergensor.co.jp.emergensor.presentation.mapandfeed.MapViewModel" />
+
     </data>
 
     <android.support.design.widget.CoordinatorLayout
@@ -38,6 +42,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
+            android:onClick="@{viewModel::call}"
             android:src="@mipmap/ic_launcher"
             app:layout_anchor="@id/bottom_sheet"
             app:layout_anchorGravity="right|top" />

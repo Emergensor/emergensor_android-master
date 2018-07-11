@@ -11,7 +11,7 @@ import team_emergensor.co.jp.emergensor.domain.entity.FacebookFriend
 import team_emergensor.co.jp.emergensor.domain.entity.FollowingUser
 
 
-class FirebaseDao() {
+class FirebaseFacebookUserDao() {
     private val db = FirebaseFirestore.getInstance()
 
     fun follow(emergensorUser: EmergensorUser, uid: String, isFollow: Boolean) {

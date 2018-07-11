@@ -7,12 +7,14 @@ import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.app.ActionBarDrawerToggle
+import android.support.v7.widget.Toolbar
 import android.util.Log
 import android.view.WindowManager
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import team_emergensor.co.jp.emergensor.R
+import team_emergensor.co.jp.emergensor.data.repository.EmergencyCallRepository
 import team_emergensor.co.jp.emergensor.data.repository.EmergensorUserRepository
 import team_emergensor.co.jp.emergensor.databinding.ActivityHomeBinding
 import team_emergensor.co.jp.emergensor.databinding.DrawerHeaderBinding
@@ -28,8 +30,11 @@ class HomeActivity : BaseActivity() {
         DataBindingUtil.setContentView<ActivityHomeBinding>(this, R.layout.activity_home)
     }
 
-    private val myInfoRepository by lazy {
+    private val emergensorUserRepository by lazy {
         EmergensorUserRepository(this)
+    }
+    private val emergencyCallRepository by lazy {
+        EmergencyCallRepository(this)
     }
 
     private val compositeDisposable = CompositeDisposable()
@@ -40,6 +45,7 @@ class HomeActivity : BaseActivity() {
         binding.setLifecycleOwner(this)
         initFragment()
         initDrawer()
+        initViewModel()
         initSubscribe()
     }
 
@@ -85,20 +91,7 @@ class HomeActivity : BaseActivity() {
         }
     }
 
-    private fun initSubscribe() {
-
-        compositeDisposable.add(
-                myInfoRepository.getMyInfoWithAsync()
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe { it, e ->
-                            e?.let {
-                                Log.e("get my info", e.message)
-                                return@subscribe
-                            }
-                            navigationHeaderViewModel.facebookInfo = it
-                        })
-
+    private fun initViewModel() {
         homeViewModel.replaceFragmentPublisher.observe(this, Observer<HomeViewModel.State> {
             val fragmentManager = supportFragmentManager
             var fragment: Fragment? = null
@@ -138,7 +131,7 @@ class HomeActivity : BaseActivity() {
         homeViewModel.mapToolbarVisible.observe(this, Observer {
             val isMap = it ?: return@Observer
             if (isMap) {
-                binding.mapToolBar?.findViewById<android.support.v7.widget.Toolbar>(R.id.mapToolBar).apply {
+                binding.mapToolBar?.findViewById<Toolbar>(R.id.mapToolBar).apply {
                     title = ""
                     setSupportActionBar(this)
                     val actionBarDrawerToggle = ActionBarDrawerToggle(
@@ -151,7 +144,7 @@ class HomeActivity : BaseActivity() {
                     actionBarDrawerToggle.syncState()
                 }
             } else {
-                binding.normalToolBar?.findViewById<android.support.v7.widget.Toolbar>(R.id.normalToolBar).apply {
+                binding.normalToolBar?.findViewById<Toolbar>(R.id.normalToolBar).apply {
                     title = ""
                     setSupportActionBar(this)
                     val actionBarDrawerToggle = ActionBarDrawerToggle(
@@ -165,6 +158,20 @@ class HomeActivity : BaseActivity() {
                 }
             }
         })
+    }
+
+    private fun initSubscribe() {
+        compositeDisposable.add(
+                emergensorUserRepository.getMyInfoWithAsync()
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe { it, e ->
+                            e?.let {
+                                Log.e("get my info", e.message)
+                                return@subscribe
+                            }
+                            navigationHeaderViewModel.facebookInfo = it
+                        })
     }
 
     private fun setWindowFullScreen(boolean: Boolean) {

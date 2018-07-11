@@ -33,24 +33,18 @@ class EmergensorUserRepository(private val context: Context) : Repository(contex
         }
     }
 
-    fun getMyInfoLocal(): EmergensorUser {
-        val id = Prefs.with(context).read(ID_KEY, "")
-        val name = Prefs.with(context).read(NAME_KEY, "")
-        val picUrl = Prefs.with(context).read(PIC_KEY, "")
-        return EmergensorUser(id, name, picUrl)
+    fun fetchMyInfo(): Single<EmergensorUser> {
+        return facebookService.getMyInfo().flatMap {
+            setMyInfo(it)
+            Single.fromCallable { it }
+        }
     }
 
-    fun fetchMyInfo() =
-            facebookService.getMyInfo().flatMap {
-                setMyInfo(it)
-                Single.fromCallable { it }
-            }
-
-    fun isExistUserInFirebase(): Boolean {
+    fun isUserExistInFirebase(): Boolean {
         return Prefs.with(context).readBoolean(EXIST_IN_FIREBASE)
     }
 
-    fun setExistingInFirebase(boolean: Boolean) {
+    fun setUserExistingInFirebase(boolean: Boolean) {
         Prefs.with(context).writeBoolean(EXIST_IN_FIREBASE, boolean)
     }
 
