@@ -6,6 +6,7 @@ import java.util.*
 
 data class EmergencyCall(
         val facebook_id: String,
+        val picture: String,
         @ServerTimestamp val date: Date,
         val point: GeoPoint,
         val description: String,

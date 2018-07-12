@@ -12,3 +12,11 @@ fun ImageView.loadImage(url: String?) {
             .into(this)
 
 }
+
+@BindingAdapter("imageUrl")
+fun ImageView.loadImageUrl(url: String?) {
+    GlideApp.with(this.context)
+            .load(url)
+            .placeholder(R.color.gray)
+            .into(this)
+}

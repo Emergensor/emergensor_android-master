@@ -239,7 +239,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
         val location = location ?: return
         shouldCall = false
         val user = emergencyCallRepository?.getMyInfoLocal() ?: return
-        val call = EmergencyCall(user.id, Calendar.getInstance().time, GeoPoint(location.latitude, location.longitude), "", EmergencyType.VIOLENCE)
+        val call = EmergencyCall(user.id, user.pictureUrl, Calendar.getInstance().time, GeoPoint(location.latitude, location.longitude), "", EmergencyType.VIOLENCE)
         val autoCall = AutoEmergencyCall(user.id, Calendar.getInstance().time, GeoPoint(location.latitude, location.longitude), "", ActionType.RUN)
         emergencyCallRepository?.call(call)
         emergencyCallRepository?.autoCall(autoCall)
