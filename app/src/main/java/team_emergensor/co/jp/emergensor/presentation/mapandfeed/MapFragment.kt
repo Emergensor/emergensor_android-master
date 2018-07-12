@@ -10,6 +10,8 @@ import android.os.Bundle
 import android.support.annotation.Nullable
 import android.support.v4.app.ActivityCompat
 import android.support.v4.app.Fragment
+import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,7 +25,11 @@ import com.google.android.gms.maps.*
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.firestore.GeoPoint
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.schedulers.Schedulers
 import team_emergensor.co.jp.emergensor.R
+import team_emergensor.co.jp.emergensor.data.repository.DangerousAreaRepository
 import team_emergensor.co.jp.emergensor.data.repository.EmergencyCallRepository
 import team_emergensor.co.jp.emergensor.databinding.FragmentMapBinding
 import team_emergensor.co.jp.emergensor.domain.entity.ActionType
@@ -46,8 +52,14 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
         EmergencyCallRepository(context)
     }
 
+    private val dangerousAreaRepository by lazy {
+        val context = context ?: return@lazy null
+        DangerousAreaRepository(context)
+    }
+
     private var map: GoogleMap? = null
     private var mGoogleApiClient: GoogleApiClient? = null
+    private val compositeDisposable = CompositeDisposable()
 
     override fun onCreateView(inflater: LayoutInflater, @Nullable container: ViewGroup?, @Nullable savedInstanceState: Bundle?): View? {
         binding = DataBindingUtil.inflate(inflater, R.layout.fragment_map, container, false)
@@ -62,6 +74,38 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
         }
         val transaction = childFragmentManager.beginTransaction()
         transaction.replace(R.id.map, googleMapFragment).commit()
+
+        val manager = LinearLayoutManager(context).also {
+            it.orientation = LinearLayoutManager.HORIZONTAL
+        }
+        binding.markerListView.also {
+            it.layoutManager = manager
+            it.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                private var isScrollRight = true
+                override fun onScrollStateChanged(recyclerView: RecyclerView?, newState: Int) {
+                    super.onScrollStateChanged(recyclerView, newState)
+                    when (newState) {
+                        RecyclerView.SCROLL_STATE_IDLE -> {
+                            val visibleItemCount = recyclerView?.childCount ?: return
+                            val manager = recyclerView.layoutManager as LinearLayoutManager
+                            val firstVisibleItem = manager.findFirstVisibleItemPosition()
+                            val lastInScreen = firstVisibleItem + visibleItemCount - 1
+                            if (isScrollRight) {
+                                manager.smoothScrollToPosition(recyclerView, RecyclerView.State(), lastInScreen)
+                            } else {
+                                manager.smoothScrollToPosition(recyclerView, RecyclerView.State(), firstVisibleItem)
+                            }
+                        }
+                    }
+                }
+
+                override fun onScrolled(recyclerView: RecyclerView?, dx: Int, dy: Int) {
+                    super.onScrolled(recyclerView, dx, dy)
+                    isScrollRight = dx > 0
+                }
+            })
+            it.adapter = viewModel.adapter
+        }
         return binding.root
     }
 
@@ -88,6 +132,15 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
 
     private fun initSubscribe() {
         viewModel.emergencyCallPublisher.observe(this, emergencyCallObserver)
+        val repo = dangerousAreaRepository ?: return
+        compositeDisposable.add(
+                repo.observeDangerousArea()
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe {
+                            viewModel.dangerousAreas = it
+                        }
+        )
     }
 
 
@@ -208,6 +261,11 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
     override fun onPause() {
         super.onPause()
         mGoogleApiClient?.disconnect()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        compositeDisposable.dispose()
     }
 
     companion object {
