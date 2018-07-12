@@ -23,7 +23,7 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.*
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.Marker
 import com.google.firebase.firestore.GeoPoint
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
@@ -39,7 +39,8 @@ import team_emergensor.co.jp.emergensor.domain.entity.EmergencyType
 import java.util.*
 
 
-class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationSource {
+class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationSource, GoogleMap.OnMarkerClickListener {
+
 
     private lateinit var binding: FragmentMapBinding
 
@@ -59,6 +60,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
 
     private var map: GoogleMap? = null
     private var mGoogleApiClient: GoogleApiClient? = null
+
     private val compositeDisposable = CompositeDisposable()
 
     override fun onCreateView(inflater: LayoutInflater, @Nullable container: ViewGroup?, @Nullable savedInstanceState: Bundle?): View? {
@@ -80,45 +82,36 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
         }
         binding.markerListView.also {
             it.layoutManager = manager
-            it.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                private var isScrollRight = true
-                override fun onScrollStateChanged(recyclerView: RecyclerView?, newState: Int) {
-                    super.onScrollStateChanged(recyclerView, newState)
-                    when (newState) {
-                        RecyclerView.SCROLL_STATE_IDLE -> {
-                            val visibleItemCount = recyclerView?.childCount ?: return
-                            val manager = recyclerView.layoutManager as LinearLayoutManager
-                            val firstVisibleItem = manager.findFirstVisibleItemPosition()
-                            val lastInScreen = firstVisibleItem + visibleItemCount - 1
-                            if (isScrollRight) {
-                                manager.smoothScrollToPosition(recyclerView, RecyclerView.State(), lastInScreen)
-                            } else {
-                                manager.smoothScrollToPosition(recyclerView, RecyclerView.State(), firstVisibleItem)
-                            }
-                        }
-                    }
-                }
-
-                override fun onScrolled(recyclerView: RecyclerView?, dx: Int, dy: Int) {
-                    super.onScrolled(recyclerView, dx, dy)
-                    isScrollRight = dx > 0
-                }
-            })
+            it.addOnScrollListener(scrollListener)
             it.adapter = viewModel.adapter
         }
         return binding.root
     }
 
+    private var markers = mutableListOf<Pair<Int, Marker>>()
     override fun onMapReady(p0: GoogleMap?) {
-        map = p0
+        map = p0 ?: return
         val context = context ?: return
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            map?.run {
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            map!!.run {
                 isMyLocationEnabled = true
                 setLocationSource(this@MapFragment)
                 isMyLocationEnabled = true
+                setOnMarkerClickListener(this@MapFragment)
             }
         }
+        viewModel.markersPublisher.observe(this, Observer {
+            markers.forEach {
+                it.second.remove()
+            }
+            if (it != null && map != null) {
+                var i = -1
+                markers.addAll(it.map {
+                    i++
+                    Pair(i, map!!.addMarker(it))
+                })
+            }
+        })
     }
 
     private fun initMap() {
@@ -184,22 +177,24 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
     }
 
     private var lastPosition: Location? = null
+    private var shouldInitCameraPos = true
 
     private val locationListener = LocationListener { p0 ->
         val location = p0 ?: return@LocationListener
-        lastPosition = location
+        if (map != null) {
+            lastPosition = location
 
-        if (shouldCall) sendLocation(location)
+            if (shouldCall) sendLocation(location)
 
-        val lat = location.latitude
-        val lng = location.longitude
+            if (shouldInitCameraPos) {
+                shouldInitCameraPos = false
+                val lat = location.latitude
+                val lng = location.longitude
 
-        val newLocation = LatLng(lat, lng)
-        map?.addMarker(MarkerOptions().position(newLocation).title("My Location"))
-        map?.moveCamera(CameraUpdateFactory.newLatLngZoom(newLocation, 8f))
-        val marker = MarkerOptions().position(LatLng(35.5, 140.0)).title("hoge")
-        map?.addMarker(marker)
-        map?.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(35.5, 140.0), 8f))
+                val newLocation = LatLng(lat, lng)
+                map?.moveCamera(CameraUpdateFactory.newLatLngZoom(newLocation, 8f))
+            }
+        }
     }
 
     private val locationRequest = LocationRequest.create().also {
@@ -270,6 +265,39 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
 
     companion object {
         var googleMapFragment: SupportMapFragment? = null
+    }
+
+    private val scrollListener = object : RecyclerView.OnScrollListener() {
+        private var isScrollRight = true
+        override fun onScrollStateChanged(recyclerView: RecyclerView?, newState: Int) {
+            super.onScrollStateChanged(recyclerView, newState)
+            when (newState) {
+                RecyclerView.SCROLL_STATE_IDLE -> {
+                    val visibleItemCount = recyclerView?.childCount ?: return
+                    val manager = recyclerView.layoutManager as LinearLayoutManager
+                    val firstVisibleItem = manager.findFirstVisibleItemPosition()
+                    val lastInScreen = firstVisibleItem + visibleItemCount - 1
+                    if (isScrollRight) {
+                        manager.smoothScrollToPosition(recyclerView, RecyclerView.State(), lastInScreen)
+                    } else {
+                        manager.smoothScrollToPosition(recyclerView, RecyclerView.State(), firstVisibleItem)
+                    }
+                }
+            }
+        }
+
+        override fun onScrolled(recyclerView: RecyclerView?, dx: Int, dy: Int) {
+            super.onScrolled(recyclerView, dx, dy)
+            isScrollRight = dx > 0
+        }
+    }
+
+    override fun onMarkerClick(marker: Marker?): Boolean {
+        val pair = markers.firstOrNull { it.second == marker } ?: return true
+        (binding.markerListView.layoutManager as LinearLayoutManager).smoothScrollToPosition(binding.markerListView, RecyclerView.State(), pair.first)
+        map?.moveCamera(CameraUpdateFactory.newLatLngZoom(marker!!.position, 8f))
+        Toast.makeText(context, pair.first.toString(), Toast.LENGTH_SHORT).show()
+        return true
     }
 
 }

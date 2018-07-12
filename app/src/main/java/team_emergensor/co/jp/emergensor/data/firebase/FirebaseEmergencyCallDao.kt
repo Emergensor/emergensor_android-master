@@ -38,7 +38,6 @@ class FirebaseEmergencyCallDao() {
                     val list = mutableListOf<DangerousArea>()
                     querySnapshot?.forEach {
                         list.add(DangerousArea(it["facebook_id"].toString(), it["picture"].toString(), it["description"].toString(), it["point"] as GeoPoint, it["date"] as @com.google.firebase.firestore.ServerTimestamp Date))
-                        list.add(DangerousArea(it["facebook_id"].toString(), it["picture"].toString(), it["description"].toString(), it["point"] as GeoPoint, it["date"] as @com.google.firebase.firestore.ServerTimestamp Date))
                     }
                     it.onNext(list.toTypedArray())
                 }
