@@ -6,20 +6,26 @@ import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.View
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import team_emergensor.co.jp.emergensor.R
 import team_emergensor.co.jp.emergensor.domain.entity.DangerousArea
 
-class MapViewModel : ViewModel(), GoogleMap.OnMarkerClickListener {
-    val emergencyCallPublisher = MutableLiveData<Unit>()
 
+class MapViewModel : ViewModel(), GoogleMap.OnMarkerClickListener {
+
+    val emergencyCallPublisher = MutableLiveData<Unit>()
     val markersPublisher = MutableLiveData<Array<MarkerOptions>>()
     val markerListScrollPublisher = MutableLiveData<Int>()
     val markerLookPublisher = MutableLiveData<Int>()
 
     var canUseGPS = true // FIXME: GPS使用確認
     val adapter = MarkersAdapter()
+
+    val markers = mutableListOf<Marker>()
+    val markerOptions = mutableListOf<MarkerOptions>()
 
     var dangerousAreas = arrayOf<DangerousArea>()
         set(value) {
@@ -29,12 +35,14 @@ class MapViewModel : ViewModel(), GoogleMap.OnMarkerClickListener {
             }
             adapter.viewModels.addAll(markerViewModels)
 
-            val markers = mutableListOf<MarkerOptions>()
-            field.forEach {
-                val marker = MarkerOptions().position(LatLng(it.point.latitude, it.point.longitude)).title(it.description)
-                markers.add(marker)
+            markerOptions.clear()
+            field.forEach { it ->
+                val marker = MarkerOptions()
+                        .position(LatLng(it.point.latitude, it.point.longitude))
+                        .icon(BitmapDescriptorFactory.fromResource(R.mipmap.feed_pin))
+                markerOptions.add(marker)
             }
-            markersPublisher.postValue(markers.toTypedArray())
+            markersPublisher.postValue(markerOptions.toTypedArray())
         }
 
 
@@ -42,46 +50,31 @@ class MapViewModel : ViewModel(), GoogleMap.OnMarkerClickListener {
         emergencyCallPublisher.postValue(Unit)
     }
 
-    val markers = mutableListOf<Pair<Int, Marker>>()
 
     val scrollListener = object : RecyclerView.OnScrollListener() {
-        private var isScrollRight = true
         override fun onScrollStateChanged(recyclerView: RecyclerView?, newState: Int) {
             super.onScrollStateChanged(recyclerView, newState)
+            if (recyclerView == null) return
             when (newState) {
                 RecyclerView.SCROLL_STATE_IDLE -> {
-                    val visibleItemCount = recyclerView?.childCount ?: return
                     val manager = recyclerView.layoutManager as LinearLayoutManager
-                    val firstVisibleItem = manager.findFirstVisibleItemPosition()
-                    val lastInScreen = firstVisibleItem + visibleItemCount - 1
-                    if (isScrollRight) {
-                        manager.smoothScrollToPosition(recyclerView, RecyclerView.State(), lastInScreen)
-                    } else {
-                        manager.smoothScrollToPosition(recyclerView, RecyclerView.State(), firstVisibleItem)
+                    val nextId = manager.findFirstCompletelyVisibleItemPosition()
+                    if (nextId >= 0 && nextId < markers.size) {
+                        manager.smoothScrollToPosition(recyclerView, RecyclerView.State(), nextId)
+                        markers[nextId].showInfoWindow()
+                        markerLookPublisher.postValue(nextId)
                     }
                 }
             }
         }
-
-        override fun onScrolled(recyclerView: RecyclerView?, dx: Int, dy: Int) {
-            super.onScrolled(recyclerView, dx, dy)
-            isScrollRight = dx > 0
-            val visibleItemCount = recyclerView?.childCount ?: return
-            val manager = recyclerView?.layoutManager as LinearLayoutManager
-            val firstVisibleItem = manager.findFirstVisibleItemPosition()
-            val lastInScreen = firstVisibleItem + visibleItemCount - 1
-            val nextItemId = if (isScrollRight) {
-                firstVisibleItem
-            } else {
-                lastInScreen
-            }
-            markerLookPublisher.postValue(nextItemId)
-        }
     }
 
     override fun onMarkerClick(marker: Marker?): Boolean {
-        val pair = markers.firstOrNull { it.second == marker } ?: return true
-        markerListScrollPublisher.postValue(pair.first)
+        if (marker == null) return false
+        val id = markers.indexOf(marker)
+        if (marker.isInfoWindowShown) return false
+        if (id == -1) return false
+        markerListScrollPublisher.postValue(id)
         return true
     }
 }

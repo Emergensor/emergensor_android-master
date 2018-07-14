@@ -11,6 +11,7 @@ import android.support.annotation.Nullable
 import android.support.v4.app.ActivityCompat
 import android.support.v4.app.Fragment
 import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.PagerSnapHelper
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
@@ -22,7 +23,6 @@ import com.google.android.gms.location.LocationListener
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.*
-import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.firestore.GeoPoint
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
@@ -71,8 +71,9 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
 
         if (googleMapFragment == null) {
             googleMapFragment = SupportMapFragment.newInstance()
-            googleMapFragment?.getMapAsync(this)
         }
+        googleMapFragment?.getMapAsync(this)
+
         val transaction = childFragmentManager.beginTransaction()
         transaction.replace(R.id.map, googleMapFragment).commit()
 
@@ -83,10 +84,13 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
             it.layoutManager = manager
             it.addOnScrollListener(viewModel.scrollListener)
             it.adapter = viewModel.adapter
+            val snapHelper = PagerSnapHelper()
+            snapHelper.attachToRecyclerView(binding.markerListView)
         }
         return binding.root
     }
 
+    private var isFirst = true
     override fun onMapReady(p0: GoogleMap?) {
         map = p0 ?: return
         val context = context ?: return
@@ -96,18 +100,21 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
                 setLocationSource(this@MapFragment)
                 isMyLocationEnabled = true
                 setOnMarkerClickListener(viewModel)
+                setInfoWindowAdapter(CustomInfoWindowGoogleMap(this@MapFragment))
             }
         }
         viewModel.markersPublisher.observe(this, Observer {
             viewModel.markers.forEach {
-                it.second.remove()
+                it.remove()
             }
             if (it != null && map != null) {
-                var i = -1
-                viewModel.markers.addAll(it.map {
-                    i++
-                    Pair(i, map!!.addMarker(it))
-                })
+                viewModel.markers.addAll(it.map { map!!.addMarker(it) })
+            }
+            if (isFirst) {
+                isFirst = false
+                val firstMarker = viewModel.markers.firstOrNull()
+                map?.moveCamera(CameraUpdateFactory.newLatLngZoom(firstMarker?.position, FOCUS))
+                firstMarker?.showInfoWindow()
             }
         })
     }
@@ -126,12 +133,10 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
         viewModel.markerListScrollPublisher.observe(this, Observer { id ->
             if (id == null) return@Observer
             (binding.markerListView.layoutManager as LinearLayoutManager).smoothScrollToPosition(binding.markerListView, RecyclerView.State(), id)
-
-            Toast.makeText(context, id.toString(), Toast.LENGTH_SHORT).show()
         })
         viewModel.markerLookPublisher.observe(this, Observer { id ->
             if (id == null || viewModel.markers.size <= id) return@Observer
-            map?.moveCamera(CameraUpdateFactory.newLatLngZoom(viewModel.markers[id].second.position, FOCUS))
+            map?.animateCamera(CameraUpdateFactory.newLatLngZoom(viewModel.markers[id].position, FOCUS))
         })
         val repo = dangerousAreaRepository ?: return
         compositeDisposable.add(
@@ -144,11 +149,9 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
         )
     }
 
-
     private var sending = false
     private var shouldCall = false
     private var lastPosition: Location? = null
-    private var shouldInitCameraPos = true
     private val emergencyCallObserver = Observer<Unit> {
         if (sending) {
             Toast.makeText(activity, "now sending another call", Toast.LENGTH_SHORT).show()
@@ -193,14 +196,14 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
 
             if (shouldCall) sendLocation(location)
 
-            if (shouldInitCameraPos) {
-                shouldInitCameraPos = false
-                val lat = location.latitude
-                val lng = location.longitude
-
-                val newLocation = LatLng(lat, lng)
-                map?.moveCamera(CameraUpdateFactory.newLatLngZoom(newLocation, FOCUS))
-            }
+//            if (shouldInitCameraPos) {
+//                shouldInitCameraPos = false
+//                val lat = location.latitude
+//                val lng = location.longitude
+//
+//                val newLocation = LatLng(lat, lng)
+//                map?.animateCamera(CameraUpdateFactory.newLatLngZoom(newLocation, FOCUS))
+//            }
         }
     }
 
@@ -271,9 +274,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
 
     companion object {
         var googleMapFragment: SupportMapFragment? = null
-        const val FOCUS = 17f
+        const val FOCUS = 16f
     }
-
 
 }
 

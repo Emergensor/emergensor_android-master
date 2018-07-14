@@ -33,4 +33,11 @@ class MarkerViewModel(dangerousArea: DangerousArea) : BaseObservable() {
             field = value
             notifyPropertyChanged(BR.pointName)
         }
+
+    @get:Bindable
+    var date = dangerousArea.date
+        set(value) {
+            field = value
+            notifyPropertyChanged(BR.date)
+        }
 }
