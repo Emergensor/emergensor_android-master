@@ -16,11 +16,14 @@ class AccelerationSensorEventAnalysesSubscriber : SensorEventListener {
     private val compositeDisposable = CompositeDisposable()
     private var sendCount = 0
 
+
     /**
      * publish subject
      *
      */
     private val sensorEventSubject = PublishSubject.create<Message<Array<Double>>>()
+    val actionPublisher = PublishSubject.create<String>()!!
+    val fftPublisher = PublishSubject.create<DoubleArray>()!!
 
     /**
      * filters
@@ -32,6 +35,7 @@ class AccelerationSensorEventAnalysesSubscriber : SensorEventListener {
     private val varianceFunctionFilter = VarianceFunctionFilter()
     private val hanningFunctionFilter = HanningFunctionFilter()
     private val fftFunctionFilter = FFTFunctionFilter()
+    private val complexNormFunctionFilter = ComplexNormFunctionFilter()
 
     /**
      * init (subscribe data(subject))
@@ -47,15 +51,26 @@ class AccelerationSensorEventAnalysesSubscriber : SensorEventListener {
                 }.concatMap {
                     bufferFilter.filter(it)
                 }.map {
+                    val fftData = fftFunctionFilter.filter(hanningFunctionFilter.filter(it)).body.data
+                    val pref3 = fftData.slice(5 + 1..8 + 1).toTypedArray()
+                    val pref4 = fftData.slice(9 + 1..16 + 1).toTypedArray()
+                    val pref5 = fftData.slice(17 + 1..32 + 1).toTypedArray()
+                    val pref6 = fftData.slice(33 + 1..64 + 1).toTypedArray()
                     arrayOf(
                             meanFunctionFilter.filter(it).body.data,
                             varianceFunctionFilter.filter(it).body.data,
-                            fftFunctionFilter.filter(hanningFunctionFilter.filter(it))
+                            complexNormFunctionFilter.filter(Message(it.timeStamp, Message.Body(pref3.size, pref3))).body.data,
+                            complexNormFunctionFilter.filter(Message(it.timeStamp, Message.Body(pref4.size, pref4))).body.data,
+                            complexNormFunctionFilter.filter(Message(it.timeStamp, Message.Body(pref5.size, pref5))).body.data,
+                            complexNormFunctionFilter.filter(Message(it.timeStamp, Message.Body(pref6.size, pref6))).body.data
                     )
                 }.subscribe({
-                    Log.d("sensor", "平均${it[0]}, 分散${it[1]}")
+                    val action = ActionClassifier.classify(it.toDoubleArray())
+                    Log.d("sensor", action.name)
+                    actionPublisher.onNext(action.name)
+                    fftPublisher.onNext(it.toDoubleArray())
                 }, {
-                    Log.d("sensor", it.message)
+                    Log.e("sensor error", it.message)
                 })
         compositeDisposable.add(disposable)
     }
@@ -73,7 +88,7 @@ class AccelerationSensorEventAnalysesSubscriber : SensorEventListener {
             val body = Message.Body(3, arrayOf(sensorEvent.values[0] * 0.135, sensorEvent.values[1] * 0.135, sensorEvent.values[2] * 0.135))
             val message = Message(event.timestamp / 100, body)
 
-            if (sendCount > DEBUG_MAX_SEND_COUNT - 1) return
+//            if (sendCount > DEBUG_MAX_SEND_COUNT - 1) return
             sensorEventSubject.onNext(message) // publish
             sendCount++
         }

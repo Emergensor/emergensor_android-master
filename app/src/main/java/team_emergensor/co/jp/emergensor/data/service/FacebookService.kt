@@ -1,9 +1,11 @@
 package team_emergensor.co.jp.emergensor.data.service
 
 import android.os.Bundle
+import android.util.Log
 import com.facebook.AccessToken
 import com.facebook.GraphRequest
 import io.reactivex.Single
+import org.json.JSONObject
 import team_emergensor.co.jp.emergensor.domain.entity.EmergensorUser
 import team_emergensor.co.jp.emergensor.domain.entity.FacebookFriend
 
@@ -26,10 +28,10 @@ class FacebookService {
             request.parameters = parameters
             request.executeAsync()
         }.flatMap {
-            getPictureUrl(it)
-        }.map {
-            EmergensorUser(id, name, it)
-        }
+                    getPictureUrl(it)
+                }.map {
+                    EmergensorUser(id, name, it)
+                }
     }
 
     fun getFriends(emergensorUser: EmergensorUser): Single<Array<FacebookFriend>> {
@@ -38,31 +40,44 @@ class FacebookService {
                     AccessToken.getCurrentAccessToken(),
                     "/${emergensorUser.id}/friends"
             ) { res ->
-                // todo: paging
                 val result = arrayListOf<FacebookFriend>()
-                val data = res.jsonObject.getJSONArray("data")
-                val len = data.length()
-                for (i in 0 until len) {
-                    val firebase_id = data.getJSONObject(i).get("id").toString()
-                    val name = data.getJSONObject(i).get("name").toString()
-                    result.add(FacebookFriend(firebase_id, name, ""))
+                try {
+
+
+                    val data = res.jsonObject.getJSONArray("data")
+                    val len = data.length()
+                    val jsonList = mutableListOf<JSONObject>()
+                    (0 until len).mapTo(jsonList) { data.getJSONObject(it) }
+                    Single.zipArray(
+                            { array ->
+                                array.forEach {
+                                    if (it is FacebookFriend) result.add(it)
+                                }
+                                it.onSuccess(result.toTypedArray())
+                            },
+                            jsonList.map {
+                                Single.create<FacebookFriend> { res ->
+                                    val id = it.get("id").toString()
+                                    val name = it.get("name").toString()
+                                    getPictureUrl(id).subscribe { t1, t2 ->
+                                        if (t2 != null) {
+                                            res.onError(t2)
+                                            return@subscribe
+                                        }
+                                        res.onSuccess(FacebookFriend(id, name, t1))
+                                    }
+                                }
+                            }.toTypedArray()
+                    ).subscribe()
+                } catch (e: Exception) {
+                    Log.e("facebook", e.message)
                 }
-                result.add(FacebookFriend("hoge0", "hoge0", ""))
-                result.add(FacebookFriend("hoge1", "hoge1", ""))
-                result.add(FacebookFriend("hoge2", "hoge2", ""))
-                result.add(FacebookFriend("fuga0", "fuga0", ""))
-                result.add(FacebookFriend("fuga1", "fuga1", ""))
-                result.add(FacebookFriend("fuga2", "fuga2", ""))
-                result.add(FacebookFriend("foo0", "foo0", ""))
-                result.add(FacebookFriend("foo1", "foo1", ""))
-                result.add(FacebookFriend("foo2", "foo2", ""))
-                it.onSuccess(result.toTypedArray())
             }
             request.executeAsync()
         }
     }
 
-    private fun getPictureUrl(id: String): Single<String> {
+    fun getPictureUrl(id: String): Single<String> {
         return Single.create<String> {
             val request = GraphRequest.newGraphPathRequest(
                     AccessToken.getCurrentAccessToken(),

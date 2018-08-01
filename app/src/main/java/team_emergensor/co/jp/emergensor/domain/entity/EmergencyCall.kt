@@ -10,5 +10,5 @@ data class EmergencyCall(
         @ServerTimestamp val date: Date,
         val point: GeoPoint,
         val description: String,
-        val type: EmergencyType
+        val type: DangerousType
 )

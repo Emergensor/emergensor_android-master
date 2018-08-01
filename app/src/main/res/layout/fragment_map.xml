@@ -43,6 +43,7 @@
                     android:layout_height="34dp"
                     android:layout_gravity="center_horizontal"
                     android:layout_marginTop="3dp"
+                    android:onClick="@{viewModel::onClickBelow}"
                     android:src="@mipmap/below_suggest" />
             </LinearLayout>
         </RelativeLayout>
@@ -51,7 +52,6 @@
             android:id="@+id/bottom_sheet"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@android:color/transparent"
             android:orientation="vertical"
             app:behavior_hideable="true"
             app:behavior_peekHeight="0dp"
@@ -69,8 +69,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
-            android:onClick="@{viewModel::call}"
-            android:src="@mipmap/ic_launcher"
+            android:onClick="@{viewModel::onFloatingActionButtonClick}"
+            android:src="@mipmap/fab_icon"
+            app:backgroundTint="@color/colorPrimary"
             app:layout_anchor="@id/bottom_sheet"
             app:layout_anchorGravity="right|top" />
     </android.support.design.widget.CoordinatorLayout>

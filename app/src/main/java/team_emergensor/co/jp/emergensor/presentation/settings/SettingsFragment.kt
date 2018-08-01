@@ -10,6 +10,7 @@ import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import es.dmoral.prefs.Prefs
 import team_emergensor.co.jp.emergensor.R
 import team_emergensor.co.jp.emergensor.databinding.FragmentSettingsBinding
 import team_emergensor.co.jp.emergensor.presentation.home.HomeActivity
@@ -25,12 +26,15 @@ class SettingsFragment : Fragment() {
         ViewModelProviders.of(activity).get(SettingsViewModel::class.java)
     }
 
-
     override fun onCreateView(inflater: LayoutInflater, @Nullable container: ViewGroup?, @Nullable savedInstanceState: Bundle?): View? {
         binding = DataBindingUtil.inflate(inflater, R.layout.fragment_settings, container, false)
         binding.apply {
             viewModel = this@SettingsFragment.viewModel
             setLifecycleOwner(activity)
+        }
+        if (context != null) {
+            val bool = Prefs.with(context!!).readBoolean(TAG, false)
+            viewModel.sensorLoading.postValue(bool)
         }
         initSubscribe()
         return binding.root
@@ -43,5 +47,9 @@ class SettingsFragment : Fragment() {
             startActivity(intent)
             activity.finish()
         })
+    }
+
+    companion object {
+        const val TAG = "sensor logging"
     }
 }

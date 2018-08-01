@@ -4,14 +4,23 @@ import android.databinding.BaseObservable
 import android.databinding.Bindable
 import com.android.databinding.library.baseAdapters.BR
 import team_emergensor.co.jp.emergensor.domain.entity.DangerousArea
+import team_emergensor.co.jp.emergensor.utility.DateUtil
+import java.util.*
 
 class MarkerViewModel(dangerousArea: DangerousArea) : BaseObservable() {
 
     @get:Bindable
-    var description = dangerousArea.description + dangerousArea.facebookId//FIXME
+    var description = dangerousArea.description
         set(value) {
             field = value
             notifyPropertyChanged(BR.description)
+        }
+
+    @get:Bindable
+    var id = dangerousArea.facebookId
+        set(value) {
+            field = value
+            notifyPropertyChanged(BR.id)
         }
 
     @get:Bindable
@@ -40,4 +49,9 @@ class MarkerViewModel(dangerousArea: DangerousArea) : BaseObservable() {
             field = value
             notifyPropertyChanged(BR.date)
         }
+
+    @get:Bindable
+    var dateText = DateUtil.getDiffString(dangerousArea.date, Calendar.getInstance().time)
+
+    val type = dangerousArea.type
 }

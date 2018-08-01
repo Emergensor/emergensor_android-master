@@ -18,6 +18,7 @@ import com.facebook.login.LoginResult
 import com.facebook.login.widget.LoginButton
 import com.google.firebase.auth.FacebookAuthProvider
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.iid.FirebaseInstanceId
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
@@ -71,16 +72,20 @@ class LoginActivity : AppCompatActivity() {
                     if (task.isSuccessful) {
                         // Sign in success, update UI with the signed-in user's information
                         Toast.makeText(applicationContext, "login success", Toast.LENGTH_SHORT).show()
-                        val intent = Intent(applicationContext, HomeActivity::class.java)
-                        startActivity(intent)
+                        val token = FirebaseInstanceId.getInstance().token
                         val firebaseDao = FirebaseFacebookUserDao()
                         val disposable = emergensorUserRepository.fetchMyInfo().subscribeOn(Schedulers.io())
                                 .observeOn(Schedulers.io())
                                 .subscribe { t1, t2 ->
                                     firebaseDao.setMyFacebookInfo(t1)
+                                    if (token != null) {
+                                        firebaseDao.setMyNotificationIdToken(token, t1).subscribe()
+                                    }
                                     finish()
                                 }
                         compositeDisposable.add(disposable)
+                        val intent = Intent(applicationContext, HomeActivity::class.java)
+                        startActivity(intent)
                     } else {
                         // If sign in fails, display a message to the user.
                         Toast.makeText(this, "login failed: ${task.exception?.message}",
@@ -117,8 +122,13 @@ class LoginActivity : AppCompatActivity() {
         if (!intent.getBooleanExtra(IS_AUTO_START, true)) return
         // if user already login and exist in firebase, intent to map
         FirebaseAuth.getInstance().currentUser?.let {
+            val token = FirebaseInstanceId.getInstance().token
             if (emergensorUserRepository.isUserExistInFirebase()) {
                 Toast.makeText(applicationContext, "hello, ${it.displayName}", Toast.LENGTH_SHORT).show()
+                val firebaseDao = FirebaseFacebookUserDao()
+                if (token != null) {
+                    firebaseDao.setMyNotificationIdToken(token, emergensorUserRepository.getMyInfoLocal()).subscribe()
+                }
                 val intent = Intent(applicationContext, HomeActivity::class.java)
                 startActivity(intent)
                 finish()
@@ -133,8 +143,10 @@ class LoginActivity : AppCompatActivity() {
                             }
                             val firebaseDao = FirebaseFacebookUserDao()
                             firebaseDao.setMyFacebookInfo(t1)
+                            if (token != null) {
+                                firebaseDao.setMyNotificationIdToken(token, emergensorUserRepository.getMyInfoLocal()).subscribe()
+                            }
                             emergensorUserRepository.setUserExistingInFirebase(true)
-                            Toast.makeText(applicationContext, "hello, ${it.displayName}", Toast.LENGTH_SHORT).show()
                             val intent = Intent(applicationContext, HomeActivity::class.java)
                             startActivity(intent)
                             finish()

@@ -3,10 +3,7 @@ package team_emergensor.co.jp.emergensor.data.firebase
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.GeoPoint
 import io.reactivex.Observable
-import team_emergensor.co.jp.emergensor.domain.entity.AutoEmergencyCall
-import team_emergensor.co.jp.emergensor.domain.entity.DangerousArea
-import team_emergensor.co.jp.emergensor.domain.entity.EmergencyCall
-import team_emergensor.co.jp.emergensor.domain.entity.EmergensorUser
+import team_emergensor.co.jp.emergensor.domain.entity.*
 import java.util.*
 
 class FirebaseEmergencyCallDao() {
@@ -37,7 +34,7 @@ class FirebaseEmergencyCallDao() {
                 } else {
                     val list = mutableListOf<DangerousArea>()
                     querySnapshot?.forEach {
-                        list.add(DangerousArea(it["facebook_id"].toString(), it["picture"].toString(), it["description"].toString(), it["point"] as GeoPoint, it["date"] as @com.google.firebase.firestore.ServerTimestamp Date))
+                        list.add(DangerousArea(it["facebook_id"].toString(), it["picture"].toString(), it["description"].toString(), it["point"] as GeoPoint, it["date"] as @com.google.firebase.firestore.ServerTimestamp Date, DangerousType.valueOf(it["type"].toString())))
                     }
                     it.onNext(list.toTypedArray())
                 }

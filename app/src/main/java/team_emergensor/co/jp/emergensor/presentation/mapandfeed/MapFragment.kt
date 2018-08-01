@@ -8,6 +8,7 @@ import android.databinding.DataBindingUtil
 import android.location.Location
 import android.os.Bundle
 import android.support.annotation.Nullable
+import android.support.design.widget.BottomSheetBehavior
 import android.support.v4.app.ActivityCompat
 import android.support.v4.app.Fragment
 import android.support.v7.widget.LinearLayoutManager
@@ -23,7 +24,6 @@ import com.google.android.gms.location.LocationListener
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.*
-import com.google.firebase.firestore.GeoPoint
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
@@ -31,11 +31,9 @@ import team_emergensor.co.jp.emergensor.R
 import team_emergensor.co.jp.emergensor.data.repository.DangerousAreaRepository
 import team_emergensor.co.jp.emergensor.data.repository.EmergencyCallRepository
 import team_emergensor.co.jp.emergensor.databinding.FragmentMapBinding
-import team_emergensor.co.jp.emergensor.domain.entity.ActionType
-import team_emergensor.co.jp.emergensor.domain.entity.AutoEmergencyCall
-import team_emergensor.co.jp.emergensor.domain.entity.EmergencyCall
-import team_emergensor.co.jp.emergensor.domain.entity.EmergencyType
-import java.util.*
+import team_emergensor.co.jp.emergensor.presentation.dialog.ReportDialogFragment
+import team_emergensor.co.jp.emergensor.presentation.dialog.ReportDialogViewModel
+import team_emergensor.co.jp.emergensor.presentation.home.HomeActivity
 
 
 class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationSource {
@@ -45,6 +43,10 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
 
     private val viewModel by lazy {
         ViewModelProviders.of(this).get(MapViewModel::class.java)
+    }
+
+    private val reportViewModel by lazy {
+        ViewModelProviders.of(activity as HomeActivity).get(ReportDialogViewModel::class.java)
     }
 
     private val emergencyCallRepository by lazy {
@@ -66,8 +68,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
         binding = DataBindingUtil.inflate(inflater, R.layout.fragment_map, container, false)
         binding.viewModel = viewModel
 
-        initSubscribe()
         initMap()
+        initSubscribe()
 
         if (googleMapFragment == null) {
             googleMapFragment = SupportMapFragment.newInstance()
@@ -104,9 +106,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
             }
         }
         viewModel.markersPublisher.observe(this, Observer {
-            viewModel.markers.forEach {
-                it.remove()
-            }
             if (it != null && map != null) {
                 viewModel.markers.addAll(it.map { map!!.addMarker(it) })
             }
@@ -115,6 +114,16 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
                 val firstMarker = viewModel.markers.firstOrNull()
                 map?.moveCamera(CameraUpdateFactory.newLatLngZoom(firstMarker?.position, FOCUS))
                 firstMarker?.showInfoWindow()
+            }
+        })
+        viewModel.circlesPublisher.observe(this, Observer {
+            if (it != null && map != null) {
+                viewModel.circles.addAll(it.map { map!!.addCircle(it) })
+            }
+            if (isFirst) {
+                isFirst = false
+                val firstCircle = viewModel.circles.firstOrNull()
+                firstCircle?.isVisible = true
             }
         })
     }
@@ -136,17 +145,37 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
         })
         viewModel.markerLookPublisher.observe(this, Observer { id ->
             if (id == null || viewModel.markers.size <= id) return@Observer
-            map?.animateCamera(CameraUpdateFactory.newLatLngZoom(viewModel.markers[id].position, FOCUS))
+            map?.animateCamera(CameraUpdateFactory.newLatLng(viewModel.markers[id].position))
         })
+        viewModel.reportDialogShowPublisher.observe(this, Observer {
+            val fragment = ReportDialogFragment()
+            fragment.show(activity?.fragmentManager, REPORT_DIALOG_TAG)
+        })
+        viewModel.onClickBelowPublisher.observe(this, Observer {
+            val behavior = BottomSheetBehavior.from(binding.bottomSheet)
+            behavior.state = BottomSheetBehavior.STATE_EXPANDED
+        })
+
         val repo = dangerousAreaRepository ?: return
-        compositeDisposable.add(
+        compositeDisposable.addAll(
                 repo.observeDangerousArea()
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe {
                             viewModel.dangerousAreas = it
+                        },
+                reportViewModel.reportPublisher
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe {
+                            if (lastPosition == null) {
+                                Toast.makeText(context, "turn on GPS", Toast.LENGTH_SHORT).show()
+                                return@subscribe
+                            }
+                            emergencyCallRepository?.call(it, lastPosition!!)
                         }
         )
+
     }
 
     private var sending = false
@@ -154,10 +183,10 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
     private var lastPosition: Location? = null
     private val emergencyCallObserver = Observer<Unit> {
         if (sending) {
-            Toast.makeText(activity, "now sending another call", Toast.LENGTH_SHORT).show()
+            Toast.makeText(activity, "now sending another onFloatingActionButtonClick", Toast.LENGTH_SHORT).show()
             return@Observer
         } else {
-            Toast.makeText(activity, "sending call", Toast.LENGTH_LONG).show()
+            Toast.makeText(activity, "sending onFloatingActionButtonClick", Toast.LENGTH_LONG).show()
         }
         if (!viewModel.canUseGPS) {
             Toast.makeText(activity, "turn on GPS", Toast.LENGTH_SHORT).show()
@@ -242,12 +271,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
     private fun sendLocation(location: Location?) {
         val location = location ?: return
         shouldCall = false
-        val user = emergencyCallRepository?.getMyInfoLocal() ?: return
-        val call = EmergencyCall(user.id, user.pictureUrl, Calendar.getInstance().time, GeoPoint(location.latitude, location.longitude), "", EmergencyType.VIOLENCE)
-        val autoCall = AutoEmergencyCall(user.id, Calendar.getInstance().time, GeoPoint(location.latitude, location.longitude), "", ActionType.RUN)
-        emergencyCallRepository?.call(call)
-        emergencyCallRepository?.autoCall(autoCall)
-        Toast.makeText(context, "emergency call sent", Toast.LENGTH_SHORT).show()
         sending = false
     }
 
@@ -274,7 +297,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, GoogleApiClient.ConnectionCa
 
     companion object {
         var googleMapFragment: SupportMapFragment? = null
-        const val FOCUS = 16f
+        const val FOCUS = 12f
+        const val REPORT_DIALOG_TAG = "report"
     }
 
 }

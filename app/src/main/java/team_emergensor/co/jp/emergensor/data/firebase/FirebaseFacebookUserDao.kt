@@ -34,6 +34,16 @@ class FirebaseFacebookUserDao() {
                 .addOnFailureListener { e -> Log.w(TAG, "Error adding document", e) }
     }
 
+    fun setMyNotificationIdToken(tokenId: String, emergensorUser: EmergensorUser): Single<Unit> {
+        return Single.create<Unit> {
+            db.collection("users")
+                    .document(emergensorUser.id)
+                    .update(mapOf(Pair("tokenId", tokenId)))
+                    .addOnCompleteListener { Unit -> it.onSuccess(kotlin.Unit) }
+                    .addOnFailureListener { e -> it.onError(e) }
+        }
+    }
+
     fun addFacebookUsers(emergensorUser: EmergensorUser, users: Array<FacebookFriend>): Single<Unit> {
         return Single.create<Unit> { result ->
             val task: Task<QuerySnapshot> = userRef.document(emergensorUser.id).collection("following").get().addOnCompleteListener { task ->

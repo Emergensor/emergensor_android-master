@@ -21,5 +21,6 @@
 
     <string name="button_follow">Follow</string>
     <string name="button_unfollow">Unfollow</string>
+    <string name="default_notification_channel_id">emergensor</string>
 
 </resources>

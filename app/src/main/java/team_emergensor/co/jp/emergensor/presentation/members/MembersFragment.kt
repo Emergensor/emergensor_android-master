@@ -68,6 +68,6 @@ class MembersFragment : Fragment() {
     }
 
     companion object {
-        const val TAG = "Members Fragment"
+        const val TAG = "Members CustomDialogFragment"
     }
 }

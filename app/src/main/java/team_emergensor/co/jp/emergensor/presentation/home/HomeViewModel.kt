@@ -10,7 +10,8 @@ class HomeViewModel : ViewModel() {
     enum class State {
         HOME,
         MEMBERS,
-        SETTINGS
+        SETTINGS,
+        ANALYSYS
     }
 
     private var state = State.HOME
@@ -20,6 +21,7 @@ class HomeViewModel : ViewModel() {
                     State.HOME -> true
                     State.MEMBERS -> false
                     State.SETTINGS -> false
+                    State.ANALYSYS -> false
                 }
                 mapToolbarVisible.postValue(isToolbarVisible)
                 replaceFragmentPublisher.postValue(value)
@@ -47,6 +49,9 @@ class HomeViewModel : ViewModel() {
             }
             R.id.members -> {
                 state = State.MEMBERS
+            }
+            R.id.acceleration -> {
+                state = State.ANALYSYS
             }
         }
         return@OnNavigationItemSelectedListener true

@@ -19,6 +19,7 @@ import team_emergensor.co.jp.emergensor.data.repository.EmergensorUserRepository
 import team_emergensor.co.jp.emergensor.databinding.ActivityHomeBinding
 import team_emergensor.co.jp.emergensor.databinding.DrawerHeaderBinding
 import team_emergensor.co.jp.emergensor.presentation.BaseActivity
+import team_emergensor.co.jp.emergensor.presentation.analysys.AnalysysFragment
 import team_emergensor.co.jp.emergensor.presentation.mapandfeed.MapFragment
 import team_emergensor.co.jp.emergensor.presentation.members.MembersFragment
 import team_emergensor.co.jp.emergensor.presentation.settings.SettingsFragment
@@ -113,6 +114,12 @@ class HomeActivity : BaseActivity() {
                     binding.navigationView.menu.getItem(3).isChecked = true
                     fragment = SettingsFragment()
                     title = "SETTINGS"
+                }
+                HomeViewModel.State.ANALYSYS -> {
+                    setWindowFullScreen(false)
+                    binding.navigationView.menu.getItem(2).isChecked = true
+                    fragment = AnalysysFragment()
+                    title = "ACCELERATION ANALYSYS"
                 }
             }
             fragmentManager.beginTransaction()
